@@ -1,0 +1,18 @@
+{
+  "name": "Family Prep Checklist",
+  "short_name": "PrepList",
+  "description": "Family survival prep master checklist",
+  "start_url": "/prep-checklist/",
+  "display": "standalone",
+  "background_color": "#0f0f0e",
+  "theme_color": "#c8a84b",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
