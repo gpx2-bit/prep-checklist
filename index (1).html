@@ -1,0 +1,1722 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="PrepList">
+<meta name="theme-color" id="theme-meta" content="#c8a84b">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon.svg">
+<title>Family Prep Checklist</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500&display=swap');
+:root{
+  --bg:#0f0f0e;--surface:#1a1a18;--surface2:#222220;--surface3:#2a2a27;
+  --border:#2e2e2b;--border2:#3e3e3a;
+  --accent:#c8a84b;--green:#7fba6a;--blue:#5b9bd5;--red:#d47a5b;--purple:#9b7fd4;
+  --text:#e8e6df;--muted:#7a7870;--muted2:#4a4845;
+  --warn:#e8a04a;
+}
+body.light{
+  --bg:#f5f4f0;--surface:#ffffff;--surface2:#f0eeea;--surface3:#e8e6e0;
+  --border:#dddbd4;--border2:#c8c6be;
+  --text:#1a1a18;--muted:#6a6860;--muted2:#a8a69e;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);color:var(--text);font-family:'IBM Plex Sans',sans-serif;font-size:14px;line-height:1.6;min-height:100vh;padding-bottom:calc(60px + env(safe-area-inset-bottom));transition:background 0.2s,color 0.2s}
+
+/* TAB BAR */
+.tab-bar{position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:1px solid var(--border);display:flex;padding-bottom:env(safe-area-inset-bottom);z-index:100;overflow-x:auto}
+.tab-bar::-webkit-scrollbar{display:none}
+.tab-btn{flex:1;min-width:52px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px 2px 6px;cursor:pointer;border:none;background:none;color:var(--muted);font-family:'IBM Plex Mono',monospace;font-size:8px;letter-spacing:0.3px;gap:3px;transition:color 0.15s;white-space:nowrap}
+.tab-btn svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.tab-btn.active{color:var(--accent)}
+.page{display:none}.page.active{display:block}
+
+/* HEADER */
+header{border-bottom:1px solid var(--border);padding:14px 16px 10px;padding-top:calc(14px + env(safe-area-inset-top))}
+.header-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.header-left h1{font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:600;color:var(--accent)}
+.header-left p{font-size:11px;color:var(--muted);margin-top:1px;font-family:'IBM Plex Mono',monospace}
+.big-num{font-family:'IBM Plex Mono',monospace;font-size:24px;font-weight:600;color:var(--accent);line-height:1}
+.prog-label{font-size:10px;color:var(--muted);font-family:'IBM Plex Mono',monospace;margin-top:1px}
+.prog-bar-out{height:3px;background:var(--border);border-radius:2px;margin:4px 0 0;width:120px;margin-left:auto}
+.prog-bar-in{height:100%;background:var(--accent);border-radius:2px;transition:width 0.3s}
+
+/* ALERT BANNER */
+.alert-banner{background:#3a1a0f;border-bottom:1px solid #5a2a1a;padding:8px 16px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#e87a4a;cursor:pointer;display:none}
+.alert-banner.show{display:block}
+
+/* STATS */
+.stats-row{display:flex;gap:6px;padding:8px 16px;border-bottom:1px solid var(--border);overflow-x:auto}
+.stats-row::-webkit-scrollbar{display:none}
+.stat-card{background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:7px 10px;flex-shrink:0;min-width:88px}
+.stat-card .sv{font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:600}
+.stat-card .sk{font-size:9px;color:var(--muted);font-family:'IBM Plex Mono',monospace;margin-top:1px}
+
+/* CONTROLS */
+.controls{padding:8px 16px;display:flex;gap:5px;flex-wrap:wrap;border-bottom:1px solid var(--border)}
+.filter-btn{font-family:'IBM Plex Mono',monospace;font-size:10px;padding:4px 9px;border-radius:3px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;white-space:nowrap;-webkit-appearance:none;transition:all 0.15s}
+.filter-btn.active{background:var(--accent);border-color:var(--accent);color:#0f0f0e;font-weight:600}
+.search-wrap{position:relative;width:100%}
+.search-wrap input{font-family:'IBM Plex Mono',monospace;font-size:12px;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:7px 10px 7px 28px;border-radius:4px;width:100%;outline:none;-webkit-appearance:none}
+.search-wrap input:focus{border-color:var(--accent)}
+.search-wrap input::placeholder{color:var(--muted2)}
+.search-icon{position:absolute;left:9px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:11px;pointer-events:none}
+
+/* FILTER PILLS */
+.filter-row{padding:6px 16px;display:flex;gap:5px;overflow-x:auto;border-bottom:1px solid var(--border)}
+.filter-row::-webkit-scrollbar{display:none}
+.chip{font-family:'IBM Plex Mono',monospace;font-size:10px;padding:3px 9px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;white-space:nowrap;-webkit-appearance:none;transition:all 0.15s}
+.chip.active{border-color:var(--blue);color:var(--blue);background:rgba(91,155,213,0.1)}
+
+/* MAIN */
+main{padding:10px 16px 16px}
+.section{margin-bottom:16px}
+.section-header{display:flex;align-items:center;gap:7px;margin-bottom:5px;cursor:pointer;user-select:none;padding:2px 0}
+.section-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.section-title{font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;letter-spacing:0.8px;text-transform:uppercase;flex:1}
+.section-stats{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted)}
+.mini-bar{width:44px;height:2px;background:var(--border);border-radius:1px;overflow:hidden}
+.mini-bar-fill{height:100%;border-radius:1px;transition:width 0.3s}
+.arr{color:var(--muted);font-size:9px;transition:transform 0.2s}
+.section.collapsed .arr{transform:rotate(-90deg)}
+.section.collapsed .items-list{display:none}
+.sec-edit-btn{background:none;border:none;color:var(--muted2);cursor:pointer;font-size:12px;padding:1px 4px;border-radius:3px}
+.items-list{display:flex;flex-direction:column;gap:2px}
+
+/* ITEM */
+.item{display:flex;align-items:flex-start;gap:7px;padding:8px 9px;border-radius:6px;background:var(--surface);border:1px solid transparent;position:relative}
+.item:active{background:var(--surface2)}
+.item.checked{opacity:0.35}
+.item.checked .item-name{text-decoration:line-through}
+.item.expiring{border-left:2px solid var(--warn)}
+.item.expired{border-left:2px solid var(--red)}
+.checkbox{width:17px;height:17px;border-radius:3px;border:1px solid var(--muted2);flex-shrink:0;margin-top:2px;display:flex;align-items:center;justify-content:center;font-size:10px;cursor:pointer;transition:all 0.12s}
+.item.checked .checkbox{background:var(--green);border-color:var(--green);color:#0f0f0e}
+.item-body{flex:1;min-width:0;cursor:pointer}
+.item-name{font-size:13px;color:var(--text);line-height:1.4}
+.item-detail{font-size:11px;color:var(--muted);font-family:'IBM Plex Mono',monospace;margin-top:1px}
+.item-note{font-size:11px;color:var(--purple);font-family:'IBM Plex Mono',monospace;margin-top:2px;font-style:italic}
+.item-location{font-size:10px;color:var(--blue);font-family:'IBM Plex Mono',monospace;margin-top:1px}
+.item-meta{display:flex;flex-wrap:wrap;gap:3px;margin-top:4px;align-items:center}
+.badge{font-family:'IBM Plex Mono',monospace;font-size:9px;padding:1px 5px;border-radius:2px;font-weight:500;white-space:nowrap}
+.p-high{background:#3a1a0f;color:#e87a4a;border:1px solid #5a2a1a}
+.p-med{background:#2a2a0f;color:#c8a84b;border:1px solid #4a3a1a}
+.p-low{background:#0f2a1a;color:#7fba6a;border:1px solid #1a4a2a}
+.b-member{background:var(--surface2);border:1px solid var(--border2);color:var(--blue);font-size:9px;font-family:'IBM Plex Mono',monospace;padding:1px 5px;border-radius:2px}
+.b-qty{background:var(--surface2);border:1px solid var(--border2);color:var(--muted);font-size:9px;font-family:'IBM Plex Mono',monospace;padding:1px 5px;border-radius:2px}
+.b-cost{background:var(--surface2);border:1px solid var(--border2);color:var(--accent);font-size:9px;font-family:'IBM Plex Mono',monospace;padding:1px 5px;border-radius:2px}
+.b-exp-ok{background:#0f2a1a;color:#7fba6a;border:1px solid #1a4a2a;font-size:9px;font-family:'IBM Plex Mono',monospace;padding:1px 5px;border-radius:2px}
+.b-exp-warn{background:#2a1a0f;color:var(--warn);border:1px solid #4a3a1a;font-size:9px;font-family:'IBM Plex Mono',monospace;padding:1px 5px;border-radius:2px}
+.b-exp-bad{background:#3a0f0f;color:var(--red);border:1px solid #5a1a1a;font-size:9px;font-family:'IBM Plex Mono',monospace;padding:1px 5px;border-radius:2px}
+
+/* qty progress */
+.qty-bar-wrap{margin-top:4px}
+.qty-bar-out{height:2px;background:var(--border);border-radius:1px;overflow:hidden;width:100%}
+.qty-bar-in{height:100%;background:var(--green);border-radius:1px;transition:width 0.3s}
+
+/* item photo */
+.item-photo{width:36px;height:36px;border-radius:4px;object-fit:cover;flex-shrink:0;cursor:pointer;border:1px solid var(--border)}
+.item-edit-btn{background:none;border:none;color:var(--muted2);cursor:pointer;font-size:12px;padding:1px 4px;flex-shrink:0;border-radius:3px;opacity:0;transition:opacity 0.15s;margin-top:1px}
+.item:hover .item-edit-btn{opacity:1}
+.add-item-btn{display:flex;align-items:center;gap:5px;width:100%;padding:7px 9px;border-radius:6px;background:transparent;border:1px dashed var(--border2);color:var(--muted);cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:10px;transition:all 0.15s;margin-top:2px}
+.add-item-btn:hover{border-color:var(--accent);color:var(--accent)}
+.add-section-btn{display:flex;align-items:center;gap:5px;width:100%;padding:9px 10px;border-radius:6px;background:transparent;border:1px dashed var(--border2);color:var(--muted);cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:11px;transition:all 0.15s;margin-top:6px}
+.add-section-btn:hover{border-color:var(--accent);color:var(--accent)}
+.empty-state{color:var(--muted);font-family:'IBM Plex Mono',monospace;font-size:12px;padding:28px 0;text-align:center}
+
+/* MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.72);z-index:200;align-items:flex-end;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal{background:var(--surface);border-radius:16px 16px 0 0;width:100%;max-width:580px;max-height:92vh;overflow-y:auto;padding:18px 18px calc(20px + env(safe-area-inset-bottom))}
+.modal-title{font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:var(--accent);margin-bottom:14px}
+.field{margin-bottom:10px}
+.field label{display:block;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);margin-bottom:3px}
+.field input,.field textarea,.field select{width:100%;background:var(--surface2);border:1px solid var(--border2);color:var(--text);padding:7px 9px;border-radius:5px;font-family:'IBM Plex Sans',sans-serif;font-size:13px;outline:none;-webkit-appearance:none;resize:vertical}
+.field input:focus,.field textarea:focus,.field select:focus{border-color:var(--accent)}
+.field select option{background:var(--surface2)}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.field-row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.modal-actions{display:flex;gap:7px;margin-top:14px}
+.btn-primary{flex:1;padding:9px;border-radius:5px;background:var(--accent);border:none;color:#0f0f0e;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;cursor:pointer}
+.btn-secondary{padding:9px 14px;border-radius:5px;background:transparent;border:1px solid var(--border2);color:var(--muted);font-family:'IBM Plex Mono',monospace;font-size:11px;cursor:pointer}
+.btn-danger{padding:9px 14px;border-radius:5px;background:transparent;border:1px solid #5a2a1a;color:#e87a4a;font-family:'IBM Plex Mono',monospace;font-size:11px;cursor:pointer}
+.prio-select{display:flex;gap:5px;margin-top:3px}
+.prio-opt{flex:1;padding:5px;border-radius:4px;border:1px solid var(--border2);background:transparent;color:var(--muted);font-family:'IBM Plex Mono',monospace;font-size:9px;cursor:pointer;text-align:center;transition:all 0.15s}
+.prio-opt.sel-high{background:#3a1a0f;color:#e87a4a;border-color:#5a2a1a}
+.prio-opt.sel-med{background:#2a2a0f;color:#c8a84b;border-color:#4a3a1a}
+.prio-opt.sel-low{background:#0f2a1a;color:#7fba6a;border-color:#1a4a2a}
+.photo-preview{width:72px;height:72px;border-radius:6px;object-fit:cover;border:1px solid var(--border2);cursor:pointer;display:block;margin-top:4px}
+.photo-placeholder{width:72px;height:72px;border-radius:6px;border:1px dashed var(--border2);display:flex;align-items:center;justify-content:center;color:var(--muted);cursor:pointer;margin-top:4px;font-size:22px;background:var(--surface2)}
+
+/* SHOPPING LIST */
+.shop-section{padding:12px 16px;border-bottom:1px solid var(--border)}
+.shop-title{font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;letter-spacing:0.8px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;display:flex;align-items:center;justify-content:space-between}
+.shop-item{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border)}
+.shop-item:last-child{border-bottom:none}
+.shop-check{width:18px;height:18px;border-radius:3px;border:1px solid var(--muted2);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:10px;cursor:pointer}
+.shop-item.shop-done .shop-check{background:var(--green);border-color:var(--green);color:#0f0f0e}
+.shop-item.shop-done .shop-name{text-decoration:line-through;color:var(--muted)}
+.shop-name{flex:1;font-size:13px}
+.shop-del{background:none;border:none;color:var(--muted2);cursor:pointer;font-size:14px;padding:0 4px}
+.shop-add-row{display:flex;gap:7px;margin-top:10px}
+.shop-add-row input{flex:1;background:var(--surface2);border:1px solid var(--border2);color:var(--text);padding:7px 9px;border-radius:5px;font-family:'IBM Plex Sans',sans-serif;font-size:13px;outline:none;-webkit-appearance:none}
+.shop-add-row input:focus{border-color:var(--accent)}
+.shop-add-row button{padding:7px 13px;border-radius:5px;background:var(--accent);border:none;color:#0f0f0e;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;cursor:pointer}
+.clear-btn{font-family:'IBM Plex Mono',monospace;font-size:10px;padding:3px 8px;border-radius:3px;border:1px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer}
+.add-from-list-btn{font-family:'IBM Plex Mono',monospace;font-size:10px;padding:4px 9px;border-radius:3px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;margin-top:6px;width:100%;transition:all 0.15s}
+.add-from-list-btn:hover{border-color:var(--accent);color:var(--accent)}
+
+/* BUDGET */
+.budget-summary{display:flex;gap:6px;padding:10px 16px;border-bottom:1px solid var(--border);overflow-x:auto}
+.budget-summary::-webkit-scrollbar{display:none}
+.b-card{background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:7px 12px;flex-shrink:0}
+.b-card .bv{font-family:'IBM Plex Mono',monospace;font-size:16px;font-weight:600}
+.b-card .bk{font-size:9px;color:var(--muted);font-family:'IBM Plex Mono',monospace;margin-top:1px}
+.budget-filter{padding:7px 16px;border-bottom:1px solid var(--border)}
+.budget-filter select{background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:5px 9px;border-radius:4px;font-family:'IBM Plex Mono',monospace;font-size:11px;outline:none;-webkit-appearance:none;width:100%}
+.budget-list{padding:10px 16px}
+.budget-item{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border)}
+.budget-item:last-child{border-bottom:none}
+.bi-info{flex:1;min-width:0}
+.bi-name{font-size:12px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bi-cat{font-size:10px;color:var(--muted);font-family:'IBM Plex Mono',monospace}
+.bi-cost input{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--accent);background:transparent;border:none;border-bottom:1px solid var(--border2);width:72px;text-align:right;outline:none;padding:2px 3px}
+.bi-cost input:focus{border-bottom-color:var(--accent)}
+
+/* CALORIE CALCULATOR */
+.calc-section{padding:14px 16px;border-bottom:1px solid var(--border)}
+.calc-title{font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;letter-spacing:0.8px;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
+.calc-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.calc-field label{display:block;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);margin-bottom:3px}
+.calc-field input{width:100%;background:var(--surface2);border:1px solid var(--border2);color:var(--text);padding:6px 8px;border-radius:4px;font-family:'IBM Plex Mono',monospace;font-size:13px;outline:none;-webkit-appearance:none}
+.calc-field input:focus{border-color:var(--accent)}
+.calc-result{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-top:8px}
+.calc-result .days{font-family:'IBM Plex Mono',monospace;font-size:28px;font-weight:600;color:var(--accent);line-height:1}
+.calc-result .days-label{font-size:11px;color:var(--muted);font-family:'IBM Plex Mono',monospace;margin-top:2px}
+.calc-breakdown{margin-top:10px;display:flex;flex-direction:column;gap:5px}
+.calc-row{display:flex;align-items:center;justify-content:space-between;font-size:12px}
+.calc-row .cr-label{color:var(--muted);font-family:'IBM Plex Mono',monospace;font-size:11px}
+.calc-row .cr-val{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text)}
+.calorie-items{margin-top:12px;display:flex;flex-direction:column;gap:4px}
+.cal-item-row{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)}
+.cal-item-row:last-child{border-bottom:none}
+.cal-item-name{flex:1;font-size:12px;color:var(--text)}
+.cal-item-input{font-family:'IBM Plex Mono',monospace;font-size:11px;background:var(--surface2);border:1px solid var(--border2);color:var(--text);padding:3px 6px;border-radius:3px;width:80px;text-align:right;outline:none;-webkit-appearance:none}
+.cal-item-input:focus{border-color:var(--accent)}
+.cal-item-unit{font-size:10px;color:var(--muted);font-family:'IBM Plex Mono',monospace;width:28px}
+
+/* EMERGENCY PLAN */
+.plan-tabs{display:flex;gap:0;border-bottom:1px solid var(--border);overflow-x:auto}
+.plan-tabs::-webkit-scrollbar{display:none}
+.plan-tab{padding:9px 14px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;transition:all 0.15s;background:none;border-top:none;border-left:none;border-right:none}
+.plan-tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.plan-content{display:none;padding:14px 16px}
+.plan-content.active{display:block}
+.plan-block{background:var(--surface);border:1px solid var(--border);border-radius:7px;margin-bottom:10px;overflow:hidden}
+.plan-block-header{display:flex;align-items:center;justify-content:space-between;padding:9px 11px;border-bottom:1px solid var(--border)}
+.plan-block-title{font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:var(--text)}
+.plan-block-body{padding:9px 11px}
+.plan-view{font-size:13px;color:var(--text);line-height:1.7;white-space:pre-wrap;min-height:18px}
+.plan-view.empty{color:var(--muted);font-style:italic;font-size:12px}
+.plan-textarea{width:100%;background:var(--surface2);border:1px solid var(--border2);color:var(--text);padding:7px 9px;border-radius:5px;font-family:'IBM Plex Sans',sans-serif;font-size:13px;outline:none;resize:vertical;min-height:70px;line-height:1.6;-webkit-appearance:none}
+.plan-textarea:focus{border-color:var(--accent)}
+.plan-save-row{display:flex;justify-content:flex-end;gap:7px;margin-top:7px}
+.plan-save-btn{padding:5px 13px;border-radius:4px;background:var(--accent);border:none;color:#0f0f0e;font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;cursor:pointer}
+.plan-cancel-btn{padding:5px 13px;border-radius:4px;background:transparent;border:1px solid var(--border2);color:var(--muted);font-family:'IBM Plex Mono',monospace;font-size:10px;cursor:pointer}
+.plan-edit-btn{background:none;border:none;color:var(--muted);cursor:pointer;font-size:11px;padding:2px 7px;border-radius:3px}
+.plan-del-btn{background:none;border:none;color:var(--muted2);cursor:pointer;font-size:11px;padding:2px 5px}
+.add-plan-btn{display:flex;align-items:center;gap:5px;width:100%;padding:9px 10px;border-radius:6px;background:transparent;border:1px dashed var(--border2);color:var(--muted);cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:10px;transition:all 0.15s;margin-top:4px}
+.add-plan-btn:hover{border-color:var(--accent);color:var(--accent)}
+
+/* RALLY MAP */
+.map-wrap{padding:14px 16px}
+.map-canvas-outer{position:relative;border:1px solid var(--border);border-radius:8px;overflow:hidden;background:#1a1a18;cursor:crosshair}
+canvas#mapBg,canvas#mapDraw{position:absolute;top:0;left:0;width:100%;height:100%;touch-action:none}
+canvas#mapBg{display:block}
+canvas#mapDraw{display:block}
+.map-canvas-outer{height:420px}
+.map-toolbar{display:flex;gap:5px;margin-bottom:8px;flex-wrap:wrap}
+.map-tool-btn{font-family:'IBM Plex Mono',monospace;font-size:10px;padding:4px 9px;border-radius:3px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;-webkit-appearance:none;transition:all 0.15s;white-space:nowrap}
+.map-tool-btn.active{background:var(--accent);border-color:var(--accent);color:#0f0f0e}
+.map-tool-btn.tool-danger.active{background:var(--red);border-color:var(--red);color:#fff}
+.map-section-title{font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;letter-spacing:0.8px;text-transform:uppercase;color:var(--muted);margin:10px 0 5px}
+.map-color-row{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:8px}
+.map-color-swatch{width:22px;height:22px;border-radius:50%;cursor:pointer;border:2px solid transparent;flex-shrink:0}
+.map-color-swatch.active{border-color:white}
+.map-size-row{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+.map-size-row label{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);flex-shrink:0}
+.map-size-row input{flex:1;accent-color:var(--accent)}
+.map-text-row{display:flex;gap:7px;margin-bottom:8px}
+.map-text-row input{flex:1;background:var(--surface2);border:1px solid var(--border2);color:var(--text);padding:6px 9px;border-radius:4px;font-family:'IBM Plex Sans',sans-serif;font-size:13px;outline:none;-webkit-appearance:none}
+.map-text-row input:focus{border-color:var(--accent)}
+.map-text-row button{padding:6px 12px;border-radius:4px;background:var(--accent);border:none;color:#0f0f0e;font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;cursor:pointer}
+.map-upload-btn{display:flex;align-items:center;gap:7px;width:100%;padding:9px 12px;border-radius:6px;background:transparent;border:1px dashed var(--border2);color:var(--muted);cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:11px;transition:all 0.15s;margin-bottom:10px}
+.map-upload-btn:hover{border-color:var(--accent);color:var(--accent)}
+.map-actions{display:flex;gap:7px;margin-top:10px;flex-wrap:wrap}
+.map-action-btn{font-family:'IBM Plex Mono',monospace;font-size:11px;padding:7px 13px;border-radius:5px;border:1px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;transition:all 0.15s}
+.map-action-btn:hover{border-color:var(--accent);color:var(--accent)}
+.map-instructions{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);margin-top:8px;line-height:1.7}
+.map-legend{margin-top:8px;display:flex;flex-wrap:wrap;gap:6px}
+.map-legend-item{display:flex;align-items:center;gap:4px;font-size:10px;color:var(--muted);font-family:'IBM Plex Mono',monospace}
+
+/* SETTINGS */
+.settings-section{padding:14px 16px;border-bottom:1px solid var(--border)}
+.settings-title{font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;letter-spacing:0.8px;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
+.member-list{display:flex;flex-direction:column;gap:5px;margin-bottom:8px}
+.member-item{display:flex;align-items:center;gap:7px;background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:7px 9px}
+.member-name{flex:1;font-size:13px}
+.member-del{background:none;border:none;color:var(--muted2);cursor:pointer;font-size:15px;padding:0 3px}
+.add-row{display:flex;gap:7px}
+.add-row input{flex:1;background:var(--surface2);border:1px solid var(--border2);color:var(--text);padding:6px 9px;border-radius:5px;font-family:'IBM Plex Sans',sans-serif;font-size:13px;outline:none;-webkit-appearance:none}
+.add-row input:focus{border-color:var(--accent)}
+.add-row button{padding:6px 13px;border-radius:5px;background:var(--accent);border:none;color:#0f0f0e;font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;cursor:pointer}
+.danger-btn{width:100%;padding:9px;border-radius:5px;background:transparent;border:1px solid #5a2a1a;color:#e87a4a;font-family:'IBM Plex Mono',monospace;font-size:11px;cursor:pointer;margin-top:6px}
+.toggle-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0}
+.toggle-row label{font-size:13px;color:var(--text)}
+.toggle{position:relative;width:38px;height:22px}
+.toggle input{opacity:0;width:0;height:0}
+.toggle-slider{position:absolute;inset:0;background:var(--border2);border-radius:22px;transition:0.2s;cursor:pointer}
+.toggle-slider:before{content:'';position:absolute;width:16px;height:16px;left:3px;bottom:3px;background:var(--muted);border-radius:50%;transition:0.2s}
+.toggle input:checked + .toggle-slider{background:var(--accent)}
+.toggle input:checked + .toggle-slider:before{transform:translateX(16px);background:#0f0f0e}
+
+/* PRINT */
+@media print{
+  .tab-bar,.controls,.filter-row,.stats-row,.alert-banner,.no-print{display:none!important}
+  body{padding-bottom:0;background:white;color:black;font-size:12px}
+  .page{display:block!important}
+  header{padding-top:12px}
+  .item{page-break-inside:avoid;border:1px solid #ccc;margin-bottom:4px}
+  .modal-overlay{display:none!important}
+}
+
+/* INSTALL */
+#install-banner{display:none;background:var(--surface);border-bottom:1px solid var(--border);padding:9px 16px;align-items:center;gap:9px;font-size:11px;color:var(--muted);font-family:'IBM Plex Mono',monospace}
+#install-banner.show{display:flex}
+#install-banner strong{color:var(--accent)}
+#install-dismiss{margin-left:auto;background:none;border:none;color:var(--muted);cursor:pointer;font-size:15px}
+.offline-badge{display:none;font-family:'IBM Plex Mono',monospace;font-size:9px;padding:2px 5px;border-radius:2px;background:#2a2a0f;color:var(--accent);border:1px solid #4a3a1a;margin-left:5px}
+</style>
+</head>
+<body>
+
+<div id="install-banner">
+  <span>Tap <strong>Share</strong> → <strong>Add to Home Screen</strong> to install offline</span>
+  <button id="install-dismiss" onclick="dismissBanner()">✕</button>
+</div>
+
+<!-- CHECKLIST PAGE -->
+<div class="page active" id="page-checklist">
+  <header>
+    <div class="header-top">
+      <div class="header-left">
+        <h1>// PREP CHECKLIST <span class="offline-badge" id="offline-badge">OFFLINE</span></h1>
+        <p id="subtitle-text">Family · 3–6 month target</p>
+      </div>
+      <div style="text-align:right;flex-shrink:0">
+        <div class="big-num" id="pct">0%</div>
+        <div class="prog-label" id="counts">0 / 0</div>
+        <div class="prog-bar-out"><div class="prog-bar-in" id="main-bar" style="width:0%"></div></div>
+      </div>
+    </div>
+  </header>
+  <div class="alert-banner" id="exp-alert" onclick="setFilter('expiring',document.getElementById('f-expiring'))"></div>
+  <div class="stats-row" id="stats-row"></div>
+  <div class="controls">
+    <button class="filter-btn active" onclick="setFilter('all',this)">All</button>
+    <button class="filter-btn" onclick="setFilter('remaining',this)">Remaining</button>
+    <button class="filter-btn" onclick="setFilter('done',this)">Acquired</button>
+    <button class="filter-btn" onclick="setFilter('high',this)">🔴 Buy First</button>
+    <button id="f-expiring" class="filter-btn" onclick="setFilter('expiring',this)">⚠ Expiring</button>
+    <button class="filter-btn no-print" onclick="window.print()" style="margin-left:auto">🖨 Print</button>
+    <div class="search-wrap">
+      <span class="search-icon">⌕</span>
+      <input type="text" id="search" placeholder="Search items…" oninput="doSearch(this.value)" autocomplete="off" autocorrect="off" spellcheck="false">
+    </div>
+  </div>
+  <div class="filter-row" id="member-filter-row"></div>
+  <div class="filter-row" id="location-filter-row" style="display:none"></div>
+  <main id="checklist-main"></main>
+</div>
+
+<!-- SHOPPING LIST PAGE -->
+<div class="page" id="page-shop">
+  <header><div class="header-left"><h1>// SHOPPING LIST</h1><p>Tap items from your checklist to add</p></div></header>
+  <div class="shop-section">
+    <div class="shop-title">
+      <span>MY LIST</span>
+      <button class="clear-btn" onclick="clearDoneShop()">Clear done</button>
+    </div>
+    <div id="shop-list"></div>
+    <div class="shop-add-row">
+      <input type="text" id="shop-input" placeholder="Add custom item…" autocomplete="off" autocorrect="off">
+      <button onclick="addShopItem()">Add</button>
+    </div>
+  </div>
+  <div class="shop-section">
+    <div class="shop-title"><span>ADD FROM CHECKLIST</span></div>
+    <button class="add-from-list-btn" onclick="addAllHighPriority()">+ Add all unacquired BUY FIRST items</button>
+    <div id="quick-add-list" style="margin-top:8px"></div>
+  </div>
+</div>
+
+<!-- BUDGET PAGE -->
+<div class="page" id="page-budget">
+  <header><div class="header-left"><h1>// BUDGET TRACKER</h1><p>Track cost per item</p></div></header>
+  <div class="budget-summary" id="budget-summary"></div>
+  <div class="budget-filter">
+    <select id="budget-cat-filter" onchange="renderBudget()">
+      <option value="all">All categories</option>
+    </select>
+  </div>
+  <div class="budget-list" id="budget-list"></div>
+</div>
+
+<!-- CALORIES PAGE -->
+<div class="page" id="page-calories">
+  <header><div class="header-left"><h1>// CALORIE CALCULATOR</h1><p>Estimate days of food supply</p></div></header>
+  <div class="calc-section">
+    <div class="calc-title">Family Setup</div>
+    <div class="calc-grid">
+      <div class="calc-field"><label>Adults</label><input type="number" id="cal-adults" value="2" min="0" max="20" oninput="calcCalories()"></div>
+      <div class="calc-field"><label>Children</label><input type="number" id="cal-kids" value="2" min="0" max="20" oninput="calcCalories()"></div>
+    </div>
+    <div class="calc-grid">
+      <div class="calc-field"><label>Adult cal/day</label><input type="number" id="cal-adult-daily" value="2000" min="500" max="4000" step="100" oninput="calcCalories()"></div>
+      <div class="calc-field"><label>Child cal/day</label><input type="number" id="cal-kid-daily" value="1500" min="300" max="3000" step="100" oninput="calcCalories()"></div>
+    </div>
+    <div class="calc-title" style="margin-top:14px">Food Stock (what you have)</div>
+    <div class="calorie-items" id="calorie-items"></div>
+    <div class="calc-result" id="calc-result" style="margin-top:14px">
+      <div class="days" id="calc-days">0</div>
+      <div class="days-label">days of food supply</div>
+      <div class="calc-breakdown" id="calc-breakdown"></div>
+    </div>
+  </div>
+</div>
+
+<!-- EMERGENCY PLAN PAGE -->
+<div class="page" id="page-plan">
+  <header style="padding-bottom:0"><div class="header-left"><h1>// EMERGENCY PLAN</h1><p>Tap any section to edit</p></div></header>
+  <div class="plan-tabs" id="plan-tabs"></div>
+  <div id="plan-panels"></div>
+</div>
+
+<!-- RALLY MAP PAGE -->
+<div class="page" id="page-map">
+  <header><div class="header-left"><h1>// RALLY MAP</h1><p>Upload your area · draw routes · works fully offline</p></div></header>
+  <div class="map-wrap">
+
+    <!-- Upload background -->
+    <label class="map-upload-btn" for="map-bg-upload">
+      📷 Upload map screenshot (Google Maps, satellite, etc.)
+    </label>
+    <input type="file" id="map-bg-upload" accept="image/*" style="display:none" onchange="handleMapBgUpload(this)">
+
+    <!-- Two-layer canvas -->
+    <div class="map-canvas-outer" id="map-outer">
+      <canvas id="mapBg"></canvas>
+      <canvas id="mapDraw"></canvas>
+    </div>
+
+    <!-- Tool sections -->
+    <div class="map-section-title">Draw Tool</div>
+    <div class="map-toolbar" id="map-toolbar"></div>
+
+    <div class="map-section-title">Color</div>
+    <div class="map-color-row" id="map-colors"></div>
+
+    <div class="map-section-title">Brush Size</div>
+    <div class="map-size-row">
+      <label>Size</label>
+      <input type="range" id="map-size" min="2" max="40" value="4" oninput="mapBrushSize=parseInt(this.value)">
+      <span id="map-size-label" style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);min-width:24px">4</span>
+    </div>
+
+    <div class="map-section-title">Place Label</div>
+    <div class="map-text-row">
+      <input type="text" id="map-label-input" placeholder="Type label then tap map…" maxlength="40">
+      <button onclick="activateLabel()">Set</button>
+    </div>
+
+    <div class="map-actions">
+      <button class="map-action-btn" onclick="undoMap()">↩ Undo</button>
+      <button class="map-action-btn" onclick="exportMapImage()">💾 Save as image</button>
+      <button class="map-action-btn" style="color:var(--red);border-color:#5a2a1a" onclick="clearDrawing()">Clear drawing</button>
+      <button class="map-action-btn" style="color:var(--red);border-color:#5a2a1a" onclick="clearMapAll()">Clear all</button>
+    </div>
+
+    <div class="map-legend" id="map-legend"></div>
+
+    <div class="map-instructions">
+      1. Take a screenshot of your area in Google Maps or satellite view<br>
+      2. Tap the upload button above to set it as the map background<br>
+      3. Use the draw tools to mark routes, zones, and locations<br>
+      4. Tap "Save as image" to export a PNG you can print or share
+    </div>
+  </div>
+</div>
+
+<!-- SETTINGS PAGE -->
+<div class="page" id="page-settings">
+  <header><div class="header-left"><h1>// SETTINGS</h1></div></header>
+  <div class="settings-section">
+    <div class="settings-title">Appearance</div>
+    <div class="toggle-row">
+      <label>Light mode</label>
+      <label class="toggle"><input type="checkbox" id="light-toggle" onchange="toggleTheme(this.checked)"><span class="toggle-slider"></span></label>
+    </div>
+  </div>
+  <div class="settings-section">
+    <div class="settings-title">Family Members</div>
+    <div class="member-list" id="member-list"></div>
+    <div class="add-row">
+      <input type="text" id="new-member-input" placeholder="Add name (e.g. Dad, Mom, Jake…)" maxlength="30">
+      <button onclick="addMember()">Add</button>
+    </div>
+  </div>
+  <div class="settings-section">
+    <div class="settings-title">Header Subtitle</div>
+    <div class="field"><input type="text" id="subtitle-input" placeholder="e.g. Smith Family · 3–6 month target" maxlength="60"></div>
+    <button class="btn-primary" onclick="saveSubtitle()">Save</button>
+  </div>
+  <div class="settings-section">
+    <div class="settings-title">Storage Locations</div>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:8px">Add your custom storage locations to tag items with.</p>
+    <div class="member-list" id="location-list"></div>
+    <div class="add-row">
+      <input type="text" id="new-location-input" placeholder="e.g. Shelf A Tier 2, Basement…" maxlength="40">
+      <button onclick="addLocation()">Add</button>
+    </div>
+  </div>
+  <div class="settings-section">
+    <div class="settings-title">Data</div>
+    <button class="danger-btn" onclick="if(confirm('Reset all checkmarks?')){state.checked={};save();renderChecklist();}">Reset all checkmarks</button>
+    <button class="danger-btn" onclick="exportData()">Export backup (JSON)</button>
+    <div style="margin-top:10px">
+      <label style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);display:block;margin-bottom:4px">Import backup</label>
+      <input type="file" accept=".json" onchange="importData(this)" style="font-size:12px;color:var(--muted)">
+    </div>
+  </div>
+</div>
+
+<!-- TAB BAR -->
+<nav class="tab-bar">
+  <button class="tab-btn active" onclick="showPage('checklist',this)">
+    <svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>LIST
+  </button>
+  <button class="tab-btn" onclick="showPage('shop',this);renderShop()">
+    <svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>SHOP
+  </button>
+  <button class="tab-btn" onclick="showPage('budget',this);renderBudget()">
+    <svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>BUDGET
+  </button>
+  <button class="tab-btn" onclick="showPage('calories',this);renderCalories()">
+    <svg viewBox="0 0 24 24"><path d="M18 8h1a4 4 0 010 8h-1"/><path d="M2 8h16v9a4 4 0 01-4 4H6a4 4 0 01-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>CALS
+  </button>
+  <button class="tab-btn" onclick="showPage('plan',this);renderPlan()">
+    <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>PLAN
+  </button>
+  <button class="tab-btn" onclick="showPage('map',this);initMapSystem()">
+    <svg viewBox="0 0 24 24"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/></svg>MAP
+  </button>
+  <button class="tab-btn" onclick="showPage('settings',this);renderSettings()">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06-.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>SETTINGS
+  </button>
+</nav>
+
+<!-- ITEM MODAL -->
+<div class="modal-overlay" id="item-modal">
+  <div class="modal">
+    <div class="modal-title" id="modal-title">Edit Item</div>
+    <div class="field"><label>Item name</label><input type="text" id="m-name" maxlength="100"></div>
+    <div class="field"><label>Details / notes</label><textarea id="m-detail" rows="2" placeholder="Brand, where to buy, specifications…"></textarea></div>
+    <div class="field"><label>Personal note</label><textarea id="m-note" rows="2" placeholder="e.g. Got deal at Costco, check expiry date…"></textarea></div>
+    <div class="field"><label>Storage location</label><select id="m-location"><option value="">— None —</option></select></div>
+    <div class="field-row">
+      <div class="field"><label>Target qty</label><input type="text" id="m-qty-target" placeholder="e.g. 200 lbs"></div>
+      <div class="field"><label>Qty acquired</label><input type="text" id="m-qty-got" placeholder="e.g. 50 lbs"></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Purchase date</label><input type="date" id="m-buy-date"></div>
+      <div class="field"><label>Expiry date</label><input type="date" id="m-exp-date"></div>
+    </div>
+    <div class="field"><label>Assign to</label><select id="m-member"><option value="">— Unassigned —</option></select></div>
+    <div class="field"><label>Priority</label>
+      <div class="prio-select">
+        <div class="prio-opt" data-p="high" onclick="selPrio('high')">🔴 BUY FIRST</div>
+        <div class="prio-opt" data-p="med" onclick="selPrio('med')">🟡 SOON</div>
+        <div class="prio-opt" data-p="low" onclick="selPrio('low')">🟢 LATER</div>
+      </div>
+    </div>
+    <div class="field"><label>Photo</label>
+      <div id="photo-wrap"></div>
+      <input type="file" id="photo-input" accept="image/*" capture="environment" style="display:none" onchange="handlePhoto(this)">
+    </div>
+    <div class="modal-actions">
+      <button class="btn-danger" id="modal-del-btn" onclick="deleteItem()">Delete</button>
+      <button class="btn-secondary" onclick="closeModal('item-modal')">Cancel</button>
+      <button class="btn-primary" onclick="saveItem()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- SECTION MODAL -->
+<div class="modal-overlay" id="section-modal">
+  <div class="modal">
+    <div class="modal-title" id="sec-modal-title">Category</div>
+    <div class="field"><label>Name</label><input type="text" id="sec-name" maxlength="40"></div>
+    <div class="field"><label>Color</label>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px" id="color-swatches">
+        <div class="csw" data-c="#c8a84b" onclick="selColor('#c8a84b')" style="width:22px;height:22px;border-radius:50%;background:#c8a84b;cursor:pointer"></div>
+        <div class="csw" data-c="#7fba6a" onclick="selColor('#7fba6a')" style="width:22px;height:22px;border-radius:50%;background:#7fba6a;cursor:pointer"></div>
+        <div class="csw" data-c="#5b9bd5" onclick="selColor('#5b9bd5')" style="width:22px;height:22px;border-radius:50%;background:#5b9bd5;cursor:pointer"></div>
+        <div class="csw" data-c="#d47a5b" onclick="selColor('#d47a5b')" style="width:22px;height:22px;border-radius:50%;background:#d47a5b;cursor:pointer"></div>
+        <div class="csw" data-c="#9b7fd4" onclick="selColor('#9b7fd4')" style="width:22px;height:22px;border-radius:50%;background:#9b7fd4;cursor:pointer"></div>
+        <div class="csw" data-c="#e87a4a" onclick="selColor('#e87a4a')" style="width:22px;height:22px;border-radius:50%;background:#e87a4a;cursor:pointer"></div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-danger" id="sec-del-btn" onclick="deleteSection()" style="display:none">Delete</button>
+      <button class="btn-secondary" onclick="closeModal('section-modal')">Cancel</button>
+      <button class="btn-primary" onclick="saveSection()">Save</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── DEFAULTS ───────────────────────────────────────────────────────
+const SK='prepApp_v4';
+let state={subtitle:'Family · 3–6 month target',members:[],locations:[],sections:[],checked:{},costs:{},plan:{},shopList:[],mapBgData:null,mapDrawData:null,lightMode:false,calStock:{}};
+
+const DS=[
+  {id:'water',title:'Water Supply',color:'#5b9bd5',items:[
+    {name:'55-gallon food-grade water barrel',detail:'qty: 4 — with bung wrench',priority:'high'},
+    {name:'Hand pump for barrel',detail:'qty: 4 (one per barrel)',priority:'high'},
+    {name:'7-gallon Reliance Aqua-Tainer jugs',detail:'qty: 12',priority:'high'},
+    {name:'Berkey Big Berkey gravity filter',detail:'with 2 Black Berkey elements',priority:'high'},
+    {name:'Extra Berkey filter elements',detail:'qty: 2 pairs — backup',priority:'med'},
+    {name:'Aquatabs water purification tablets',detail:'qty: 200+ tablets',priority:'med'},
+    {name:'Unscented liquid bleach (8.25%)',detail:'1 gallon — 8 drops/gal for purification',priority:'med'},
+    {name:'Rain barrel kit (55-gal)',detail:'qty: 2–4 for garden irrigation',priority:'low'},
+    {name:'Food-grade hose / siphon pump',detail:'for transferring from barrels',priority:'low'},
+  ]},
+  {id:'pantry-dry',title:'Pantry — Dry Staples',color:'#c8a84b',items:[
+    {name:'White rice (long grain)',detail:'target: 200 lbs — buy 25 lb bags weekly',priority:'high'},
+    {name:'Dried pinto beans',detail:'target: 30 lbs',priority:'high'},
+    {name:'Dried black beans',detail:'target: 30 lbs',priority:'high'},
+    {name:'Rolled oats',detail:'target: 30 lbs',priority:'high'},
+    {name:'All-purpose flour',detail:'target: 20 lbs — store in airtight buckets',priority:'high'},
+    {name:'Cornmeal',detail:'target: 10 lbs',priority:'med'},
+    {name:'White sugar',detail:'target: 20 lbs',priority:'high'},
+    {name:'Iodized salt',detail:'target: 10 lbs — also needed for preservation',priority:'high'},
+    {name:'Honey (raw)',detail:'target: 10 lbs — indefinite shelf life',priority:'high'},
+    {name:'Pasta (various shapes)',detail:'target: 20 lbs',priority:'med'},
+    {name:'Instant mashed potato flakes',detail:'target: 10 lbs',priority:'med'},
+    {name:'Baking powder',detail:'qty: 6 cans',priority:'med'},
+    {name:'Baking soda',detail:'qty: 6 boxes',priority:'med'},
+    {name:'Dry milk powder (whole)',detail:'target: 10 lbs',priority:'med'},
+    {name:'Dried lentils',detail:'target: 10 lbs — fast cooking, high protein',priority:'med'},
+    {name:'Bouillon cubes / powder',detail:'qty: 3 large containers',priority:'med'},
+  ]},
+  {id:'pantry-canned',title:'Pantry — Canned & Jarred',color:'#c8a84b',items:[
+    {name:'Canned tuna (in water)',detail:'target: 48 cans',priority:'high'},
+    {name:'Canned chicken breast',detail:'target: 24 cans',priority:'high'},
+    {name:'Canned sardines',detail:'target: 24 cans — high omega-3',priority:'high'},
+    {name:'Canned salmon',detail:'target: 24 cans',priority:'med'},
+    {name:'Canned diced tomatoes',detail:'target: 36 cans',priority:'high'},
+    {name:'Canned tomato paste',detail:'target: 24 small cans',priority:'med'},
+    {name:'Canned corn',detail:'target: 24 cans',priority:'med'},
+    {name:'Canned green beans',detail:'target: 24 cans',priority:'med'},
+    {name:'Canned mixed vegetables',detail:'target: 24 cans',priority:'med'},
+    {name:'Canned fruit (peaches, pears)',detail:'target: 24 cans',priority:'low'},
+    {name:'Canned soups (low sodium)',detail:'target: 36 cans',priority:'med'},
+    {name:'Peanut butter',detail:'target: 10 large jars — high cal density',priority:'high'},
+    {name:'Coconut milk (canned)',detail:'target: 12 cans',priority:'low'},
+    {name:'Applesauce (unsweetened)',detail:'target: 12 jars',priority:'low'},
+  ]},
+  {id:'pantry-oils',title:'Pantry — Oils & Condiments',color:'#c8a84b',items:[
+    {name:'Vegetable oil (1-gal jugs)',detail:'qty: 6 gallons',priority:'high'},
+    {name:'Coconut oil',detail:'qty: 4 large jars',priority:'med'},
+    {name:'Olive oil',detail:'qty: 4 bottles',priority:'med'},
+    {name:'Apple cider vinegar',detail:'qty: 4 gallons — also medicinal',priority:'med'},
+    {name:'White vinegar',detail:'qty: 4 gallons — preservation + cleaning',priority:'med'},
+    {name:'Soy sauce / tamari',detail:'qty: 4 bottles',priority:'low'},
+    {name:'Hot sauce',detail:'qty: 6 bottles',priority:'low'},
+    {name:'Spice set (bulk)',detail:'garlic powder, onion powder, paprika, cumin, chili, pepper, oregano',priority:'med'},
+  ]},
+  {id:'freeze-dried',title:'Freeze-Dried & Long-Term',color:'#9b7fd4',items:[
+    {name:'Augason Farms 30-day emergency bucket',detail:'qty: 4–6 — one per person + spares',priority:'high'},
+    {name:'Mountain House freeze-dried meals',detail:'qty: 24+ pouches — variety pack',priority:'med'},
+    {name:'Freeze-dried fruit',detail:'qty: 4 large cans',priority:'med'},
+    {name:'Freeze-dried vegetables',detail:'qty: 4 large cans',priority:'med'},
+    {name:'5-gallon food-grade buckets with gamma lids',detail:'qty: 12',priority:'high'},
+    {name:'Mylar bags (1-gal and 5-gal)',detail:'qty: 50+ bags total',priority:'high'},
+    {name:'Oxygen absorbers (300cc)',detail:'qty: 100 — for mylar bag sealing',priority:'high'},
+    {name:'Silica gel packets',detail:'qty: 50+',priority:'med'},
+  ]},
+  {id:'energy',title:'Energy & Power',color:'#7fba6a',items:[
+    {name:'Solar generator (EcoFlow Delta Pro or Jackery 2000 Pro)',detail:'~2kWh capacity',priority:'high'},
+    {name:'200W solar panels',detail:'qty: 2',priority:'high'},
+    {name:'12V DC mini fridge (BougeRV 30qt)',detail:'far more efficient than 120V',priority:'high'},
+    {name:'Propane camp stove (2-burner)',detail:'Camp Chef or Coleman',priority:'high'},
+    {name:'20 lb propane tank',detail:'qty: 2 — with adapter hose',priority:'high'},
+    {name:'1 lb propane canisters',detail:'qty: 12 — portable backup',priority:'med'},
+    {name:'Candles (long-burn, unscented)',detail:'qty: 24',priority:'med'},
+    {name:'Fire starters / waterproof matches',detail:'qty: 3 boxes + 4 lighters',priority:'high'},
+    {name:'Ferro rod / flint striker',detail:'qty: 2',priority:'med'},
+  ]},
+  {id:'lighting',title:'Lighting & Comms',color:'#5b9bd5',items:[
+    {name:'NOAA weather radio (Midland ER310)',detail:'hand-crank + solar + battery',priority:'high'},
+    {name:'LED headlamps',detail:'qty: 4 — one per person',priority:'high'},
+    {name:'AA/AAA batteries (bulk)',detail:'qty: 48+ AA, 24+ AAA',priority:'high'},
+    {name:'Rechargeable batteries + solar charger',detail:'8-pack Eneloop',priority:'med'},
+    {name:'Hand-crank / solar lantern',detail:'qty: 2',priority:'med'},
+    {name:'High-lumen flashlights (1000+)',detail:'qty: 2',priority:'med'},
+    {name:'Walkie-talkies GMRS (Midland T295VP4)',detail:'qty: 2 pairs',priority:'med'},
+  ]},
+  {id:'medical',title:'Medical & First Aid',color:'#d47a5b',items:[
+    {name:'Trauma kit (CAT tourniquet, QuikClot, chest seal)',detail:'non-negotiable',priority:'high'},
+    {name:'Standard first aid kit (large)',detail:'band-aids, gauze, tape, ace bandage',priority:'high'},
+    {name:'N95 / KN95 masks',detail:'qty: 40+ masks',priority:'high'},
+    {name:'Nitrile gloves (box of 100)',detail:'qty: 3 boxes',priority:'high'},
+    {name:'Prescription medications (90-day supply)',detail:'talk to your doctor',priority:'high'},
+    {name:'Ibuprofen 500ct (bulk)',detail:'qty: 2 bottles',priority:'high'},
+    {name:'Acetaminophen 500ct (bulk)',detail:'qty: 2 bottles',priority:'high'},
+    {name:'Loperamide / Imodium (bulk)',detail:'critical for preventing dehydration',priority:'high'},
+    {name:'Oral rehydration salts (ORS packets)',detail:'qty: 50 packets',priority:'high'},
+    {name:'Digital thermometer',detail:'qty: 2',priority:'med'},
+    {name:'Manual blood pressure cuff + stethoscope',detail:'',priority:'med'},
+    {name:'Betadine (povidone iodine, 16oz)',detail:'',priority:'med'},
+    {name:'Dental emergency kit',detail:'temp filling + clove oil',priority:'med'},
+    {name:'Adult multivitamins (1-year supply)',detail:'365 count',priority:'high'},
+    {name:"Children's multivitamins (1-year supply)",detail:'365 count',priority:'high'},
+    {name:'Vitamin D3 5000 IU tablets',detail:'qty: 365',priority:'med'},
+    {name:'Electrolyte powder (LMNT or Liquid IV)',detail:'60-pack box, qty: 2',priority:'med'},
+  ]},
+  {id:'sanitation',title:'Sanitation & Hygiene',color:'#9b7fd4',items:[
+    {name:'5-gallon bucket toilet with snap-on seat',detail:'qty: 2',priority:'high'},
+    {name:'Compostable waste bags',detail:'qty: 200',priority:'high'},
+    {name:'Kitty litter or agricultural lime (40lb)',detail:'qty: 2',priority:'high'},
+    {name:'Wet wipes (unscented)',detail:'qty: 20 packs',priority:'high'},
+    {name:'Toilet paper',detail:'qty: 60+ rolls',priority:'high'},
+    {name:'Bar soap (unscented)',detail:'qty: 24 bars',priority:'high'},
+    {name:'Hand sanitizer (8oz pump)',detail:'qty: 6 bottles',priority:'med'},
+    {name:'Toothbrushes + toothpaste',detail:'qty: 4 extra of each',priority:'high'},
+    {name:'Feminine hygiene products',detail:'6-month supply if applicable',priority:'high'},
+    {name:'Unscented bleach 8.25% (gallon)',detail:'qty: 4',priority:'high'},
+    {name:'Heavy duty trash bags (55-gal)',detail:'qty: 2 boxes',priority:'med'},
+    {name:'Dish soap (Dawn, large)',detail:'qty: 4 bottles',priority:'med'},
+    {name:'Laundry detergent (powder)',detail:'qty: 2 large buckets',priority:'med'},
+  ]},
+  {id:'tools',title:'Tools & Hardware',color:'#7fba6a',items:[
+    {name:'Manual can openers',detail:'qty: 3',priority:'high'},
+    {name:'Cast iron skillet 10" + 12" (Lodge)',detail:'',priority:'high'},
+    {name:'Cast iron dutch oven 5qt',detail:'for bread, soups, stews',priority:'high'},
+    {name:'Hand-crank grain mill',detail:'Country Living or WonderMill Junior',priority:'med'},
+    {name:'Pressure canner (All American 921)',detail:'21.5qt — no gaskets',priority:'high'},
+    {name:'Water bath canner with rack',detail:'for tomatoes, pickles, jams',priority:'high'},
+    {name:'Mason jars wide mouth quart (case of 12)',detail:'qty: 4 cases',priority:'high'},
+    {name:'Mason jars wide mouth pint (case of 12)',detail:'qty: 2 cases',priority:'med'},
+    {name:'Canning lids (bulk)',detail:'qty: 200 — Tattler reusable preferred',priority:'high'},
+    {name:'Vacuum sealer (FoodSaver) + extra bags',detail:'qty: 200+ bags',priority:'med'},
+    {name:'Food dehydrator (Excalibur 9-tray)',detail:'',priority:'med'},
+    {name:'Multitool (Leatherman Wave+)',detail:'qty: 2',priority:'high'},
+    {name:'Paracord 550lb (200ft spool)',detail:'qty: 2',priority:'med'},
+    {name:'Duct tape (Gorilla brand)',detail:'qty: 6 rolls',priority:'med'},
+    {name:'Heavy duty tarp 10×12',detail:'qty: 4',priority:'med'},
+    {name:'Leather work gloves',detail:'qty: 4 pairs',priority:'med'},
+  ]},
+  {id:'garden',title:'Garden & Preservation',color:'#7fba6a',items:[
+    {name:'Heirloom seed collection (Seed Savers Exchange)',detail:'full variety pack',priority:'high'},
+    {name:'2-year backup seed supply',detail:'sweet potato, bean, squash, kale, tomato',priority:'high'},
+    {name:'Raised bed lumber (2"×10" cedar)',detail:'plan for 6–8 beds at 4×8 ft',priority:'high'},
+    {name:'Quality garden soil / compost (40lb bags)',detail:'qty: 20+',priority:'high'},
+    {name:'Balanced fertilizer (10-10-10, 50lb)',detail:'',priority:'med'},
+    {name:'Broad fork',detail:'for deep aeration without tilling',priority:'med'},
+    {name:'Wheel hoe / oscillating hoe',detail:'',priority:'med'},
+    {name:'Drip irrigation kit',detail:'gravity-fed or pump',priority:'med'},
+    {name:'Row cover / frost cloth (50ft roll)',detail:'extend season in CT',priority:'med'},
+    {name:'Cold frame / mini greenhouse',detail:'for starting seeds in March',priority:'low'},
+  ]},
+  {id:'shelter',title:'Shelter & Gear',color:'#9b7fd4',items:[
+    {name:'Sleeping bags (0°F rated)',detail:'qty: 4 — one per person',priority:'high'},
+    {name:'Sleeping pads (foam or inflatable)',detail:'qty: 4',priority:'high'},
+    {name:'Emergency mylar blankets',detail:'qty: 12',priority:'high'},
+    {name:'Wool blankets',detail:'qty: 4',priority:'med'},
+    {name:'Seville Classics 5-tier shelving (77"H × 48"W × 24"D)',detail:'qty: 3 units',priority:'high'},
+    {name:'Bug-out bags pre-packed (72-hr kit)',detail:'qty: 1 per person',priority:'high'},
+    {name:'Waterproof document bag',detail:'IDs, deeds, insurance, cash copies',priority:'high'},
+    {name:'$500–1000 cash in small bills',detail:'stored in fireproof safe',priority:'high'},
+    {name:'Fireproof / waterproof safe',detail:'',priority:'med'},
+    {name:'Rain ponchos',detail:'qty: 4',priority:'med'},
+    {name:'Waterproof work boots',detail:'qty: 1 pair per adult',priority:'med'},
+  ]},
+  {id:'defense',title:'Security & Defense',color:'#d47a5b',items:[
+    {name:'Firearms (pistol + rifle)',detail:'per your selection and training',priority:'high'},
+    {name:'Ammunition',detail:'min 500 rds rifle + 500 rds handgun per caliber',priority:'high'},
+    {name:'Gun cleaning kit',detail:'bore snake + solvent + oil',priority:'high'},
+    {name:'Extra magazines (3–5 per firearm)',detail:'labeled by firearm',priority:'high'},
+    {name:'Secure gun safe (bolted)',detail:'',priority:'high'},
+    {name:'Chest rig or battle belt',detail:'',priority:'med'},
+    {name:'Electronic ear protection (Howard Leight)',detail:'qty: 2',priority:'med'},
+    {name:'Ballistic-rated eye protection',detail:'qty: 4',priority:'med'},
+  ]},
+];
+
+const DP={
+  'bug-in':{label:'Bug In',blocks:[
+    {id:'bi-shelter',title:'Shelter & Rooms',content:''},
+    {id:'bi-water',title:'Water Sources',content:''},
+    {id:'bi-food',title:'Food & Cooking',content:''},
+    {id:'bi-power',title:'Power & Heat',content:''},
+    {id:'bi-comms',title:'Communications',content:''},
+    {id:'bi-security',title:'Security & Watch',content:''},
+    {id:'bi-med',title:'Medical',content:''},
+    {id:'bi-roles',title:'Family Roles',content:''},
+  ]},
+  'bug-out':{label:'Bug Out',blocks:[
+    {id:'bo-trigger',title:'When to Leave (Triggers)',content:''},
+    {id:'bo-dest',title:'Primary Destination',content:''},
+    {id:'bo-dest2',title:'Backup Destination',content:''},
+    {id:'bo-route',title:'Primary Route',content:''},
+    {id:'bo-route2',title:'Backup Route',content:''},
+    {id:'bo-vehicle',title:'Vehicle & Fuel',content:''},
+    {id:'bo-bags',title:'What to Grab (in order)',content:''},
+    {id:'bo-comms',title:'Meeting Point / Signal',content:''},
+  ]},
+  'family':{label:"Go to Family's",blocks:[
+    {id:'fam-who',title:"Whose House",content:''},
+    {id:'fam-addr',title:'Address & Directions',content:''},
+    {id:'fam-contact',title:'Contact Info',content:''},
+    {id:'fam-trigger',title:'When to Go',content:''},
+    {id:'fam-bring',title:'What to Bring',content:''},
+    {id:'fam-comms',title:'Check-in Protocol',content:''},
+  ]},
+  'contacts':{label:'Key Contacts',blocks:[
+    {id:'c-doctor',title:'Doctor / Medical',content:''},
+    {id:'c-police',title:'Local Police / Sheriff',content:''},
+    {id:'c-neighbor',title:'Trusted Neighbors',content:''},
+    {id:'c-ooa',title:'Out-of-Area Contact',content:''},
+    {id:'c-other',title:'Other Important Contacts',content:''},
+  ]},
+};
+
+// Calorie reference data
+const CAL_ITEMS=[
+  {id:'rice',name:'White rice',unit:'lbs',calsPerUnit:1650},
+  {id:'beans',name:'Dried beans',unit:'lbs',calsPerUnit:1550},
+  {id:'oats',name:'Rolled oats',unit:'lbs',calsPerUnit:1700},
+  {id:'flour',name:'Flour',unit:'lbs',calsPerUnit:1650},
+  {id:'pasta',name:'Pasta',unit:'lbs',calsPerUnit:1670},
+  {id:'sugar',name:'Sugar',unit:'lbs',calsPerUnit:1750},
+  {id:'oil',name:'Cooking oil',unit:'gal',calsPerUnit:30000},
+  {id:'pb',name:'Peanut butter',unit:'jars (16oz)',calsPerUnit:2700},
+  {id:'canned',name:'Canned goods (avg)',unit:'cans',calsPerUnit:350},
+  {id:'freeze',name:'Freeze-dried meals',unit:'pouches',calsPerUnit:600},
+  {id:'honey',name:'Honey',unit:'lbs',calsPerUnit:1380},
+  {id:'potato',name:'Potato flakes',unit:'lbs',calsPerUnit:1650},
+];
+
+// ── STORAGE (IndexedDB for photos, localStorage for rest) ──────────
+let photoDB=null;
+function openPhotoDB(){
+  return new Promise(res=>{
+    const req=indexedDB.open('prepPhotos',1);
+    req.onupgradeneeded=e=>e.target.result.createObjectStore('photos');
+    req.onsuccess=e=>{photoDB=e.target.result;res()};
+    req.onerror=()=>res();
+  });
+}
+function savePhoto(key,dataUrl){
+  if(!photoDB)return;
+  const tx=photoDB.transaction('photos','readwrite');
+  tx.objectStore('photos').put(dataUrl,key);
+}
+function getPhoto(key){
+  return new Promise(res=>{
+    if(!photoDB){res(null);return;}
+    const tx=photoDB.transaction('photos','readonly');
+    const req=tx.objectStore('photos').get(key);
+    req.onsuccess=()=>res(req.result||null);
+    req.onerror=()=>res(null);
+  });
+}
+function deletePhoto(key){
+  if(!photoDB)return;
+  const tx=photoDB.transaction('photos','readwrite');
+  tx.objectStore('photos').delete(key);
+}
+
+function loadState(){
+  try{const s=JSON.parse(localStorage.getItem(SK));if(s)state=Object.assign({subtitle:'Family · 3–6 month target',members:[],locations:[],sections:[],checked:{},costs:{},plan:{},shopList:[],mapBgData:null,mapDrawData:null,lightMode:false,calStock:{}},s);}catch(e){}
+  if(!state.sections||!state.sections.length)state.sections=JSON.parse(JSON.stringify(DS));
+  if(!state.plan||!Object.keys(state.plan).length)state.plan=JSON.parse(JSON.stringify(DP));
+  if(!state.calStock)state.calStock={};
+  if(!state.shopList)state.shopList=[];
+  if(!state.locations)state.locations=[];
+  if(!state.mapBgData)state.mapBgData=null;
+  if(!state.mapDrawData)state.mapDrawData=null;
+}
+function save(){try{localStorage.setItem(SK,JSON.stringify(state));}catch(e){}}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
+function iid(s,n){return s+'::'+n;}
+
+// ── THEME ──────────────────────────────────────────────────────────
+function applyTheme(){
+  document.body.classList.toggle('light',state.lightMode);
+  const toggle=document.getElementById('light-toggle');
+  if(toggle)toggle.checked=state.lightMode;
+}
+function toggleTheme(on){state.lightMode=on;save();applyTheme();}
+
+// ── PAGE NAV ───────────────────────────────────────────────────────
+function showPage(name,btn){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  btn.classList.add('active');
+}
+
+// ── EXPIRY HELPERS ─────────────────────────────────────────────────
+function expStatus(item){
+  if(!item.expDate)return null;
+  const now=new Date();now.setHours(0,0,0,0);
+  const exp=new Date(item.expDate+'T00:00:00');
+  const days=Math.round((exp-now)/(86400000));
+  if(days<0)return{status:'expired',days};
+  if(days<=90)return{status:'warn',days};
+  return{status:'ok',days};
+}
+
+function expBadge(item){
+  const e=expStatus(item);
+  if(!e)return'';
+  if(e.status==='expired')return`<span class="b-exp-bad">EXPIRED</span>`;
+  if(e.status==='warn')return`<span class="b-exp-warn">EXP ${e.days}d</span>`;
+  return`<span class="b-exp-ok">EXP ${e.days}d</span>`;
+}
+
+function checkExpiryAlerts(){
+  let expiredCount=0,warnCount=0;
+  state.sections.forEach(s=>(s.items||[]).forEach(i=>{
+    const e=expStatus(i);
+    if(!e)return;
+    if(e.status==='expired')expiredCount++;
+    else if(e.status==='warn')warnCount++;
+  }));
+  const banner=document.getElementById('exp-alert');
+  if(expiredCount||warnCount){
+    banner.textContent=`⚠ ${expiredCount?expiredCount+' item(s) expired':''}${expiredCount&&warnCount?' · ':''}${warnCount?warnCount+' item(s) expiring within 90 days':''} — tap to filter`;
+    banner.classList.add('show');
+  }else{banner.classList.remove('show');}
+}
+
+// ── FILTER STATE ───────────────────────────────────────────────────
+let cFilter='all',cSearch='',cMember='',cLocation='';
+
+function setFilter(f,btn){
+  cFilter=f;
+  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+  if(btn)btn.classList.add('active');
+  renderChecklist();
+}
+function doSearch(v){cSearch=v.toLowerCase();renderChecklist();}
+function setMemberF(m,el){
+  cMember=cMember===m?'':m;
+  document.querySelectorAll('.member-chip').forEach(c=>c.classList.remove('active'));
+  if(cMember)el.classList.add('active');
+  renderChecklist();
+}
+function setLocationF(l,el){
+  cLocation=cLocation===l?'':l;
+  document.querySelectorAll('.loc-chip').forEach(c=>c.classList.remove('active'));
+  if(cLocation)el.classList.add('active');
+  renderChecklist();
+}
+
+// ── CHECKLIST ──────────────────────────────────────────────────────
+function renderChecklist(){
+  document.getElementById('subtitle-text').textContent=state.subtitle;
+  renderMemberRow();renderLocationRow();renderStats();checkExpiryAlerts();
+  const container=document.getElementById('checklist-main');
+  container.innerHTML='';let anyVisible=false;
+
+  state.sections.forEach(section=>{
+    let items=section.items||[];
+    if(cSearch)items=items.filter(i=>i.name.toLowerCase().includes(cSearch)||(i.detail||'').toLowerCase().includes(cSearch)||(i.note||'').toLowerCase().includes(cSearch));
+    if(cFilter==='remaining')items=items.filter(i=>!state.checked[iid(section.id,i.name)]);
+    else if(cFilter==='done')items=items.filter(i=>state.checked[iid(section.id,i.name)]);
+    else if(cFilter==='high')items=items.filter(i=>i.priority==='high'&&!state.checked[iid(section.id,i.name)]);
+    else if(cFilter==='expiring')items=items.filter(i=>{const e=expStatus(i);return e&&(e.status==='expired'||e.status==='warn');});
+    if(cMember)items=items.filter(i=>i.member===cMember);
+    if(cLocation)items=items.filter(i=>i.location===cLocation);
+    if(!items.length&&cSearch)return;
+
+    anyVisible=true;
+    const checkedCount=(section.items||[]).filter(i=>state.checked[iid(section.id,i.name)]).length;
+    const total=(section.items||[]).length;
+    const pct=total?(checkedCount/total*100):0;
+
+    const secEl=document.createElement('div');
+    secEl.className='section';
+    secEl.innerHTML=`
+      <div class="section-header">
+        <div class="section-dot" style="background:${section.color}"></div>
+        <span class="section-title" style="color:${section.color}">${section.title}</span>
+        <div class="mini-bar"><div class="mini-bar-fill" style="width:${pct}%;background:${section.color}"></div></div>
+        <span class="section-stats">${checkedCount}/${total}</span>
+        <button class="sec-edit-btn" onclick="openSecModal('${section.id}')">✎</button>
+        <span class="arr" onclick="this.closest('.section').classList.toggle('collapsed')">▼</span>
+      </div>
+      <div class="items-list" id="list-${section.id}"></div>`;
+    container.appendChild(secEl);
+
+    const list=secEl.querySelector(`#list-${section.id}`);
+    items.forEach(item=>{
+      const id=iid(section.id,item.name);
+      const isChecked=!!state.checked[id];
+      const es=expStatus(item);
+      const el=document.createElement('div');
+      el.className='item'+(isChecked?' checked':'')+(es?.status==='expired'?' expired':es?.status==='warn'?' expiring':'');
+      const bc=item.priority==='high'?'p-high':item.priority==='med'?'p-med':'p-low';
+      const bt=item.priority==='high'?'BUY FIRST':item.priority==='med'?'SOON':'LATER';
+      // qty bar
+      let qtyBar='';
+      if(item.qtyTarget&&item.qtyGot){
+        const tNum=parseFloat(item.qtyTarget)||0;
+        const gNum=parseFloat(item.qtyGot)||0;
+        if(tNum>0){const pct2=Math.min(100,Math.round(gNum/tNum*100));qtyBar=`<div class="qty-bar-wrap"><div class="qty-bar-out"><div class="qty-bar-in" style="width:${pct2}%"></div></div></div>`;}
+      }
+      const qtyStr=item.qtyGot?(item.qtyGot+(item.qtyTarget?' / '+item.qtyTarget:'')):(item.qtyTarget||'');
+      el.innerHTML=`
+        <div class="checkbox" onclick="toggleItem('${section.id}','${item.name.replace(/'/g,"\\'")}',event)">${isChecked?'✓':''}</div>
+        <div class="item-body" onclick="openItemModal('${section.id}','${item.name.replace(/'/g,"\\'")}')">
+          <div class="item-name">${item.name}</div>
+          ${item.detail?`<div class="item-detail">${item.detail}</div>`:''}
+          ${item.note?`<div class="item-note">📝 ${item.note}</div>`:''}
+          ${item.location?`<div class="item-location">📍 ${item.location}</div>`:''}
+          <div class="item-meta">
+            <span class="badge ${bc}">${bt}</span>
+            ${item.member?`<span class="b-member">${item.member}</span>`:''}
+            ${qtyStr?`<span class="b-qty">${qtyStr}</span>`:''}
+            ${state.costs[id]?`<span class="b-cost">$${parseFloat(state.costs[id]).toFixed(2)}</span>`:''}
+            ${expBadge(item)}
+          </div>
+          ${qtyBar}
+        </div>
+        <button class="item-edit-btn" onclick="openItemModal('${section.id}','${item.name.replace(/'/g,"\\'")}')">✎</button>`;
+      list.appendChild(el);
+    });
+    const addBtn=document.createElement('button');
+    addBtn.className='add-item-btn';addBtn.innerHTML='+ Add item';
+    addBtn.onclick=()=>openNewItemModal(section.id);
+    list.appendChild(addBtn);
+  });
+
+  if(!anyVisible)container.innerHTML='<div class="empty-state">No items match your filter.</div>';
+  const addSecBtn=document.createElement('button');
+  addSecBtn.className='add-section-btn';addSecBtn.innerHTML='+ Add category';
+  addSecBtn.onclick=openNewSecModal;
+  container.appendChild(addSecBtn);
+  updateProgress();
+}
+
+function renderMemberRow(){
+  const row=document.getElementById('member-filter-row');
+  row.innerHTML='';
+  if(!state.members.length){row.style.display='none';return;}
+  row.style.display='flex';
+  state.members.forEach(m=>{
+    const c=document.createElement('button');
+    c.className='chip member-chip'+(cMember===m?' active':'');
+    c.textContent=m;c.onclick=()=>setMemberF(m,c);row.appendChild(c);
+  });
+}
+
+function renderLocationRow(){
+  const row=document.getElementById('location-filter-row');
+  row.innerHTML='';
+  if(!state.locations.length){row.style.display='none';return;}
+  row.style.display='flex';
+  state.locations.forEach(l=>{
+    const c=document.createElement('button');
+    c.className='chip loc-chip'+(cLocation===l?' active':'');
+    c.textContent=l;c.onclick=()=>setLocationF(l,c);row.appendChild(c);
+  });
+}
+
+function renderStats(){
+  const total=state.sections.reduce((a,s)=>a+(s.items||[]).length,0);
+  const done=state.sections.reduce((a,s)=>a+(s.items||[]).filter(i=>state.checked[iid(s.id,i.name)]).length,0);
+  const highLeft=state.sections.reduce((a,s)=>a+(s.items||[]).filter(i=>i.priority==='high'&&!state.checked[iid(s.id,i.name)]).length,0);
+  const spent=Object.values(state.costs).reduce((a,v)=>a+(parseFloat(v)||0),0);
+  const expCount=state.sections.reduce((a,s)=>a+(s.items||[]).filter(i=>{const e=expStatus(i);return e&&e.status!=='ok';}).length,0);
+  document.getElementById('stats-row').innerHTML=`
+    <div class="stat-card"><div class="sv">${done}</div><div class="sk">ACQUIRED</div></div>
+    <div class="stat-card"><div class="sv">${total-done}</div><div class="sk">REMAINING</div></div>
+    <div class="stat-card"><div class="sv" style="color:var(--red)">${highLeft}</div><div class="sk">BUY FIRST</div></div>
+    <div class="stat-card"><div class="sv" style="color:var(--accent)">$${spent.toFixed(0)}</div><div class="sk">SPENT</div></div>
+    ${expCount?`<div class="stat-card"><div class="sv" style="color:var(--warn)">${expCount}</div><div class="sk">EXPIRING</div></div>`:''}`;
+}
+
+function updateProgress(){
+  const total=state.sections.reduce((a,s)=>a+(s.items||[]).length,0);
+  const done=state.sections.reduce((a,s)=>a+(s.items||[]).filter(i=>state.checked[iid(s.id,i.name)]).length,0);
+  const pct=total?Math.round(done/total*100):0;
+  document.getElementById('pct').textContent=pct+'%';
+  document.getElementById('counts').textContent=done+' / '+total;
+  document.getElementById('main-bar').style.width=pct+'%';
+}
+
+function toggleItem(sectionId,name,e){
+  e.stopPropagation();
+  const id=iid(sectionId,name);
+  state.checked[id]=!state.checked[id];
+  save();renderChecklist();
+}
+
+// ── ITEM MODAL ─────────────────────────────────────────────────────
+let eSecId=null,eItemName=null,ePrio='med',ePhotoKey=null,ePendingPhoto=null;
+
+async function openItemModal(sectionId,name){
+  const section=state.sections.find(s=>s.id===sectionId);
+  const item=section.items.find(i=>i.name===name);
+  if(!item)return;
+  eSecId=sectionId;eItemName=name;ePrio=item.priority||'med';
+  ePhotoKey=iid(sectionId,name);ePendingPhoto=null;
+  document.getElementById('modal-title').textContent='Edit Item';
+  document.getElementById('m-name').value=item.name;
+  document.getElementById('m-detail').value=item.detail||'';
+  document.getElementById('m-note').value=item.note||'';
+  document.getElementById('m-qty-target').value=item.qtyTarget||'';
+  document.getElementById('m-qty-got').value=item.qtyGot||'';
+  document.getElementById('m-buy-date').value=item.buyDate||'';
+  document.getElementById('m-exp-date').value=item.expDate||'';
+  populateMemberSel(item.member||'');
+  populateLocationSel(item.location||'');
+  updatePrioUI();
+  document.getElementById('modal-del-btn').style.display='block';
+  const photo=await getPhoto(ePhotoKey);
+  renderPhotoWrap(photo);
+  openModal('item-modal');
+}
+
+function openNewItemModal(sectionId){
+  eSecId=sectionId;eItemName=null;ePrio='med';ePhotoKey=null;ePendingPhoto=null;
+  document.getElementById('modal-title').textContent='Add Item';
+  ['m-name','m-detail','m-note','m-qty-target','m-qty-got','m-buy-date','m-exp-date'].forEach(id=>document.getElementById(id).value='');
+  populateMemberSel('');populateLocationSel('');updatePrioUI();
+  document.getElementById('modal-del-btn').style.display='none';
+  renderPhotoWrap(null);
+  openModal('item-modal');
+}
+
+function renderPhotoWrap(src){
+  const wrap=document.getElementById('photo-wrap');
+  if(src){
+    wrap.innerHTML=`<img src="${src}" class="photo-preview" onclick="document.getElementById('photo-input').click()">`;
+  }else{
+    wrap.innerHTML=`<div class="photo-placeholder" onclick="document.getElementById('photo-input').click()">📷</div>`;
+  }
+}
+
+function handlePhoto(input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{ePendingPhoto=e.target.result;renderPhotoWrap(ePendingPhoto);};
+  reader.readAsDataURL(file);
+}
+
+function populateMemberSel(sel){
+  const s=document.getElementById('m-member');
+  s.innerHTML='<option value="">— Unassigned —</option>';
+  state.members.forEach(m=>{const o=document.createElement('option');o.value=m;o.textContent=m;if(m===sel)o.selected=true;s.appendChild(o);});
+}
+
+function populateLocationSel(sel){
+  const s=document.getElementById('m-location');
+  s.innerHTML='<option value="">— None —</option>';
+  state.locations.forEach(l=>{const o=document.createElement('option');o.value=l;o.textContent=l;if(l===sel)o.selected=true;s.appendChild(o);});
+}
+
+function selPrio(p){ePrio=p;updatePrioUI();}
+function updatePrioUI(){
+  document.querySelectorAll('.prio-opt').forEach(el=>{
+    el.className='prio-opt';
+    if(el.dataset.p===ePrio)el.classList.add('sel-'+ePrio);
+  });
+}
+
+async function saveItem(){
+  const name=document.getElementById('m-name').value.trim();if(!name)return;
+  const section=state.sections.find(s=>s.id===eSecId);
+  const newItem={name,detail:document.getElementById('m-detail').value.trim(),note:document.getElementById('m-note').value.trim(),
+    qtyTarget:document.getElementById('m-qty-target').value.trim(),qtyGot:document.getElementById('m-qty-got').value.trim(),
+    buyDate:document.getElementById('m-buy-date').value,expDate:document.getElementById('m-exp-date').value,
+    member:document.getElementById('m-member').value,location:document.getElementById('m-location').value,priority:ePrio};
+  if(eItemName){
+    const idx=section.items.findIndex(i=>i.name===eItemName);
+    if(idx!==-1){
+      const oldId=iid(eSecId,eItemName),newId=iid(eSecId,name);
+      if(oldId!==newId){if(state.checked[oldId]){state.checked[newId]=true;delete state.checked[oldId];}if(state.costs[oldId]){state.costs[newId]=state.costs[oldId];delete state.costs[oldId];}}
+      section.items[idx]=newItem;
+    }
+  }else{section.items.push(newItem);}
+  // save photo
+  const photoKey=iid(eSecId,name);
+  if(ePendingPhoto)savePhoto(photoKey,ePendingPhoto);
+  save();closeModal('item-modal');renderChecklist();
+}
+
+function deleteItem(){
+  if(!confirm('Delete this item?'))return;
+  const section=state.sections.find(s=>s.id===eSecId);
+  section.items=section.items.filter(i=>i.name!==eItemName);
+  const id=iid(eSecId,eItemName);
+  delete state.checked[id];delete state.costs[id];
+  if(ePhotoKey)deletePhoto(ePhotoKey);
+  save();closeModal('item-modal');renderChecklist();
+}
+
+// ── SECTION MODAL ──────────────────────────────────────────────────
+let eSecIdSec=null,eColor='#c8a84b';
+function openSecModal(id){
+  const s=state.sections.find(s=>s.id===id);eSecIdSec=id;
+  document.getElementById('sec-modal-title').textContent='Edit Category';
+  document.getElementById('sec-name').value=s.title;eColor=s.color;updateSwatches();
+  document.getElementById('sec-del-btn').style.display='block';openModal('section-modal');
+}
+function openNewSecModal(){
+  eSecIdSec=null;document.getElementById('sec-modal-title').textContent='Add Category';
+  document.getElementById('sec-name').value='';eColor='#c8a84b';updateSwatches();
+  document.getElementById('sec-del-btn').style.display='none';openModal('section-modal');
+}
+function selColor(c){eColor=c;updateSwatches();}
+function updateSwatches(){document.querySelectorAll('.csw').forEach(s=>s.style.outline=s.dataset.c===eColor?'2px solid white':'none');}
+function saveSection(){
+  const title=document.getElementById('sec-name').value.trim();if(!title)return;
+  if(eSecIdSec){const s=state.sections.find(s=>s.id===eSecIdSec);s.title=title;s.color=eColor;}
+  else{state.sections.push({id:uid(),title,color:eColor,items:[]});}
+  save();closeModal('section-modal');renderChecklist();
+}
+function deleteSection(){
+  if(!confirm('Delete this entire category and all its items?'))return;
+  state.sections=state.sections.filter(s=>s.id!==eSecIdSec);
+  save();closeModal('section-modal');renderChecklist();
+}
+
+// ── MODAL HELPERS ──────────────────────────────────────────────────
+function openModal(id){document.getElementById(id).classList.add('open');}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+document.querySelectorAll('.modal-overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open');}));
+
+// ── SHOPPING LIST ──────────────────────────────────────────────────
+function renderShop(){
+  const list=document.getElementById('shop-list');
+  list.innerHTML='';
+  if(!state.shopList.length){list.innerHTML='<p style="color:var(--muted);font-size:12px;font-family:IBM Plex Mono,monospace;padding:8px 0">Your list is empty.</p>';return;}
+  state.shopList.forEach((item,i)=>{
+    const el=document.createElement('div');
+    el.className='shop-item'+(item.done?' shop-done':'');
+    el.innerHTML=`<div class="shop-check" onclick="toggleShop(${i})">${item.done?'✓':''}</div>
+      <span class="shop-name">${item.name}</span>
+      <button class="shop-del" onclick="removeShop(${i})">✕</button>`;
+    list.appendChild(el);
+  });
+  // quick-add from checklist
+  const qa=document.getElementById('quick-add-list');qa.innerHTML='';
+  state.sections.forEach(s=>{
+    (s.items||[]).filter(i=>!state.checked[iid(s.id,i.name)]&&!state.shopList.find(sl=>sl.name===i.name)).forEach(item=>{
+      const btn=document.createElement('button');
+      btn.className='add-item-btn';btn.textContent='+ '+item.name;
+      btn.onclick=()=>{addShopItemDirect(item.name);renderShop();};
+      qa.appendChild(btn);
+    });
+  });
+}
+function toggleShop(i){state.shopList[i].done=!state.shopList[i].done;save();renderShop();}
+function removeShop(i){state.shopList.splice(i,1);save();renderShop();}
+function addShopItem(){
+  const input=document.getElementById('shop-input');
+  const name=input.value.trim();if(!name)return;
+  addShopItemDirect(name);input.value='';renderShop();
+}
+function addShopItemDirect(name){state.shopList.push({name,done:false});save();}
+function addAllHighPriority(){
+  state.sections.forEach(s=>{
+    (s.items||[]).filter(i=>i.priority==='high'&&!state.checked[iid(s.id,i.name)]&&!state.shopList.find(sl=>sl.name===i.name))
+      .forEach(i=>addShopItemDirect(i.name));
+  });save();renderShop();
+}
+function clearDoneShop(){state.shopList=state.shopList.filter(i=>!i.done);save();renderShop();}
+document.getElementById('shop-input').addEventListener('keydown',e=>{if(e.key==='Enter')addShopItem();});
+
+// ── BUDGET ─────────────────────────────────────────────────────────
+function renderBudget(){
+  const catFilter=document.getElementById('budget-cat-filter').value||'all';
+  const sel=document.getElementById('budget-cat-filter');const prev=sel.value;
+  sel.innerHTML='<option value="all">All categories</option>';
+  state.sections.forEach(s=>{const o=document.createElement('option');o.value=s.id;o.textContent=s.title;sel.appendChild(o);});
+  sel.value=prev||'all';
+  let spent=0;const listEl=document.getElementById('budget-list');listEl.innerHTML='';
+  state.sections.forEach(section=>{
+    if(catFilter!=='all'&&section.id!==catFilter)return;
+    (section.items||[]).forEach(item=>{
+      const id=iid(section.id,item.name);
+      const cost=parseFloat(state.costs[id])||0;spent+=cost;
+      const row=document.createElement('div');row.className='budget-item';
+      row.innerHTML=`<div class="bi-info"><div class="bi-name">${item.name}</div><div class="bi-cat">${section.title}</div></div>
+        <div class="bi-cost"><input type="number" min="0" step="0.01" placeholder="0.00" value="${cost>0?cost.toFixed(2):''}" onchange="setCost('${id}',this.value)" onclick="this.select()"></div>`;
+      listEl.appendChild(row);
+    });
+  });
+  document.getElementById('budget-summary').innerHTML=`
+    <div class="b-card"><div class="bv" style="color:var(--green)">$${spent.toFixed(0)}</div><div class="bk">TOTAL SPENT</div></div>
+    <div class="b-card"><div class="bv" style="color:var(--muted)">${Object.keys(state.costs).length}</div><div class="bk">ITEMS PRICED</div></div>`;
+}
+function setCost(id,val){const v=parseFloat(val);if(isNaN(v)||v<=0)delete state.costs[id];else state.costs[id]=v;save();renderStats();}
+
+// ── CALORIE CALCULATOR ─────────────────────────────────────────────
+function renderCalories(){
+  const container=document.getElementById('calorie-items');container.innerHTML='';
+  CAL_ITEMS.forEach(ci=>{
+    const row=document.createElement('div');row.className='cal-item-row';
+    const val=state.calStock[ci.id]||'';
+    row.innerHTML=`<span class="cal-item-name">${ci.name}</span>
+      <input class="cal-item-input" type="number" min="0" placeholder="0" value="${val}" oninput="updateCalStock('${ci.id}',this.value)">
+      <span class="cal-item-unit">${ci.unit}</span>`;
+    container.appendChild(row);
+  });
+  calcCalories();
+}
+function updateCalStock(id,val){state.calStock[id]=parseFloat(val)||0;save();calcCalories();}
+function calcCalories(){
+  const adults=parseInt(document.getElementById('cal-adults').value)||0;
+  const kids=parseInt(document.getElementById('cal-kids').value)||0;
+  const adultDaily=parseInt(document.getElementById('cal-adult-daily').value)||2000;
+  const kidDaily=parseInt(document.getElementById('cal-kid-daily').value)||1500;
+  const dailyTotal=adults*adultDaily+kids*kidDaily;
+  let totalCals=0;
+  CAL_ITEMS.forEach(ci=>{const qty=state.calStock[ci.id]||0;totalCals+=qty*ci.calsPerUnit;});
+  const days=dailyTotal>0?Math.floor(totalCals/dailyTotal):0;
+  document.getElementById('calc-days').textContent=days;
+  const breakdown=document.getElementById('calc-breakdown');
+  breakdown.innerHTML=`
+    <div class="calc-row"><span class="cr-label">Total calories stored</span><span class="cr-val">${totalCals.toLocaleString()}</span></div>
+    <div class="calc-row"><span class="cr-label">Daily need (${adults}A + ${kids}K)</span><span class="cr-val">${dailyTotal.toLocaleString()} cal</span></div>
+    <div class="calc-row"><span class="cr-label">Months of supply</span><span class="cr-val">${(days/30).toFixed(1)}</span></div>`;
+}
+
+// ── EMERGENCY PLAN ─────────────────────────────────────────────────
+let activePlanTab=Object.keys(DP)[0];
+function renderPlan(){
+  const tabsEl=document.getElementById('plan-tabs');const panelsEl=document.getElementById('plan-panels');
+  tabsEl.innerHTML='';panelsEl.innerHTML='';
+  Object.entries(state.plan).forEach(([key,tab])=>{
+    const btn=document.createElement('button');btn.className='plan-tab'+(key===activePlanTab?' active':'');
+    btn.textContent=tab.label;btn.onclick=()=>{activePlanTab=key;renderPlan();};tabsEl.appendChild(btn);
+    const panel=document.createElement('div');panel.className='plan-content'+(key===activePlanTab?' active':'');
+    (tab.blocks||[]).forEach((block,bi)=>{
+      const blockEl=document.createElement('div');blockEl.className='plan-block';
+      const empty=!block.content;
+      blockEl.innerHTML=`<div class="plan-block-header">
+          <span class="plan-block-title">${block.title}</span>
+          <div style="display:flex;gap:3px">
+            <button class="plan-edit-btn" onclick="editPlanBlock('${key}',${bi})">✎ Edit</button>
+            <button class="plan-del-btn" onclick="delPlanBlock('${key}',${bi})">✕</button>
+          </div>
+        </div>
+        <div class="plan-block-body">
+          <div class="plan-view${empty?' empty':''}" id="pv-${block.id}">${empty?'Tap Edit to fill in details…':block.content.replace(/&/g,'&amp;').replace(/</g,'&lt;')}</div>
+          <div id="pe-${block.id}" style="display:none">
+            <textarea class="plan-textarea" id="ta-${block.id}">${block.content}</textarea>
+            <div class="plan-save-row">
+              <button class="plan-cancel-btn" onclick="cancelPlan('${block.id}')">Cancel</button>
+              <button class="plan-save-btn" onclick="savePlanBlock('${key}',${bi},'${block.id}')">Save</button>
+            </div>
+          </div>
+        </div>`;
+      panel.appendChild(blockEl);
+    });
+    const addBtn=document.createElement('button');addBtn.className='add-plan-btn';addBtn.innerHTML='+ Add section';
+    addBtn.onclick=()=>addPlanBlock(key);panel.appendChild(addBtn);
+    panelsEl.appendChild(panel);
+  });
+}
+function editPlanBlock(k,bi){const b=state.plan[k].blocks[bi];document.getElementById('pv-'+b.id).style.display='none';document.getElementById('pe-'+b.id).style.display='block';document.getElementById('ta-'+b.id).focus();}
+function cancelPlan(bid){document.getElementById('pv-'+bid).style.display='block';document.getElementById('pe-'+bid).style.display='none';}
+function savePlanBlock(k,bi,bid){state.plan[k].blocks[bi].content=document.getElementById('ta-'+bid).value;save();renderPlan();}
+function delPlanBlock(k,bi){if(!confirm('Delete this section?'))return;state.plan[k].blocks.splice(bi,1);save();renderPlan();}
+function addPlanBlock(k){const t=prompt('Section title:');if(!t)return;state.plan[k].blocks.push({id:uid(),title:t.trim(),content:''});save();renderPlan();}
+
+// ── RALLY MAP ──────────────────────────────────────────────────────
+const MAP_TOOLS=[
+  {id:'pen',    label:'✏ Pen',     cursor:'crosshair'},
+  {id:'line',   label:'╱ Line',    cursor:'crosshair'},
+  {id:'arrow',  label:'→ Arrow',   cursor:'crosshair'},
+  {id:'rect',   label:'▭ Zone',    cursor:'crosshair'},
+  {id:'circle', label:'◯ Radius',  cursor:'crosshair'},
+  {id:'pin',    label:'📍 Pin',    cursor:'pointer'},
+  {id:'text',   label:'T Label',   cursor:'text'},
+  {id:'erase',  label:'⌫ Erase',   cursor:'cell'},
+];
+const MAP_COLORS=['#e87a4a','#7fba6a','#5b9bd5','#c8a84b','#d47a5b','#9b7fd4','#ffffff','#000000'];
+const MAP_EMOJIS=['🏠','📍','🚗','👨‍👩‍👧‍👦','💧','⚠️','🔴','🟢','🔒','🌿'];
+
+let mapInited=false;
+let mapBgCtx=null,mapBgCanvas=null;
+let mapDrawCtx=null,mapDrawCanvas=null;
+let mapTool='pen',mapColor='#e87a4a',mapBrushSize=4;
+let mapDrawing=false,mapStartPos=null,mapLastPos=null;
+let mapLabelMode=false,mapLabelText='';
+let mapHistory=[]; // snapshots of draw layer for undo
+let mapPendingLabel=null;
+
+function initMapSystem(){
+  if(mapInited)return;
+  mapInited=true;
+
+  mapBgCanvas=document.getElementById('mapBg');
+  mapDrawCanvas=document.getElementById('mapDraw');
+  mapBgCtx=mapBgCanvas.getContext('2d');
+  mapDrawCtx=mapDrawCanvas.getContext('2d');
+
+  resizeMapCanvases();
+  drawMapGrid();
+
+  // restore saved state
+  if(state.mapBgData){loadMapBgFromData(state.mapBgData);}
+  if(state.mapDrawData){loadMapDrawFromData(state.mapDrawData);}
+
+  // events on draw layer only
+  mapDrawCanvas.addEventListener('pointerdown',mdDown,{passive:false});
+  mapDrawCanvas.addEventListener('pointermove',mdMove,{passive:false});
+  mapDrawCanvas.addEventListener('pointerup',mdUp,{passive:false});
+  mapDrawCanvas.addEventListener('pointercancel',mdUp,{passive:false});
+
+  // size slider label
+  document.getElementById('map-size').addEventListener('input',function(){
+    document.getElementById('map-size-label').textContent=this.value;
+    mapBrushSize=parseInt(this.value);
+  });
+
+  renderMapToolbar();renderMapColors();renderMapLegend();
+}
+
+function resizeMapCanvases(){
+  const outer=document.getElementById('map-outer');
+  const w=outer.offsetWidth||340;const h=420;
+  [mapBgCanvas,mapDrawCanvas].forEach(c=>{c.width=w;c.height=h;c.style.width='100%';c.style.height=h+'px';});
+}
+
+function drawMapGrid(){
+  const w=mapBgCanvas.width,h=mapBgCanvas.height;
+  mapBgCtx.fillStyle='#1a1a18';
+  mapBgCtx.fillRect(0,0,w,h);
+  mapBgCtx.strokeStyle='#2a2a27';mapBgCtx.lineWidth=1;
+  for(let x=0;x<w;x+=40){mapBgCtx.beginPath();mapBgCtx.moveTo(x,0);mapBgCtx.lineTo(x,h);mapBgCtx.stroke();}
+  for(let y=0;y<h;y+=40){mapBgCtx.beginPath();mapBgCtx.moveTo(0,y);mapBgCtx.lineTo(w,y);mapBgCtx.stroke();}
+  mapBgCtx.fillStyle='#3a3a37';
+  mapBgCtx.font='11px IBM Plex Mono,monospace';
+  mapBgCtx.textAlign='left';mapBgCtx.textBaseline='top';
+  mapBgCtx.fillText('Upload a map screenshot above to use as background',12,12);
+}
+
+function getMapPos(e){
+  const rect=mapDrawCanvas.getBoundingClientRect();
+  const scaleX=mapDrawCanvas.width/rect.width;
+  const scaleY=mapDrawCanvas.height/rect.height;
+  const src=e.touches?e.touches[0]:e;
+  return{x:(src.clientX-rect.left)*scaleX,y:(src.clientY-rect.top)*scaleY};
+}
+
+function pushHistory(){
+  const snap=mapDrawCtx.getImageData(0,0,mapDrawCanvas.width,mapDrawCanvas.height);
+  mapHistory.push(snap);
+  if(mapHistory.length>20)mapHistory.shift();
+}
+
+function mdDown(e){
+  e.preventDefault();
+  const pos=getMapPos(e);
+  mapDrawing=true;mapStartPos=pos;mapLastPos=pos;
+
+  if(mapTool==='text'||mapLabelMode){
+    // place label at tap point
+    const txt=mapLabelText||document.getElementById('map-label-input').value.trim();
+    if(txt){
+      pushHistory();
+      mapDrawCtx.font=`bold ${mapBrushSize+10}px IBM Plex Sans,sans-serif`;
+      mapDrawCtx.fillStyle=mapColor;
+      mapDrawCtx.textAlign='left';mapDrawCtx.textBaseline='middle';
+      // background pill
+      const tw=mapDrawCtx.measureText(txt).width;
+      mapDrawCtx.fillStyle='rgba(0,0,0,0.55)';
+      mapDrawCtx.beginPath();
+      mapDrawCtx.roundRect?mapDrawCtx.roundRect(pos.x-4,pos.y-10,tw+12,20,4):mapDrawCtx.rect(pos.x-4,pos.y-10,tw+12,20);
+      mapDrawCtx.fill();
+      mapDrawCtx.fillStyle=mapColor;
+      mapDrawCtx.fillText(txt,pos.x+2,pos.y);
+      saveMapDraw();
+      mapLabelMode=false;
+    }
+    mapDrawing=false;return;
+  }
+
+  if(mapTool==='pin'){
+    pushHistory();
+    const emojis=['📍','🏠','🚗','👨‍👩‍👧','💧','⚠️'];
+    const emoji=emojis[Math.floor(Math.random()*emojis.length)];
+    mapDrawCtx.font='26px serif';mapDrawCtx.textAlign='center';mapDrawCtx.textBaseline='middle';
+    mapDrawCtx.fillText('📍',pos.x,pos.y);
+    saveMapDraw();mapDrawing=false;return;
+  }
+
+  if(mapTool==='pen'||mapTool==='erase'){
+    pushHistory();
+    mapDrawCtx.beginPath();mapDrawCtx.moveTo(pos.x,pos.y);
+  }
+}
+
+function mdMove(e){
+  if(!mapDrawing)return;e.preventDefault();
+  const pos=getMapPos(e);
+
+  if(mapTool==='pen'){
+    mapDrawCtx.globalCompositeOperation='source-over';
+    mapDrawCtx.strokeStyle=mapColor;
+    mapDrawCtx.lineWidth=mapBrushSize;
+    mapDrawCtx.lineCap='round';mapDrawCtx.lineJoin='round';
+    mapDrawCtx.lineTo(pos.x,pos.y);mapDrawCtx.stroke();
+    mapDrawCtx.beginPath();mapDrawCtx.moveTo(pos.x,pos.y);
+  }else if(mapTool==='erase'){
+    mapDrawCtx.globalCompositeOperation='destination-out';
+    mapDrawCtx.lineWidth=mapBrushSize*4;mapDrawCtx.lineCap='round';
+    mapDrawCtx.lineTo(pos.x,pos.y);mapDrawCtx.stroke();
+    mapDrawCtx.globalCompositeOperation='source-over';
+    mapDrawCtx.beginPath();mapDrawCtx.moveTo(pos.x,pos.y);
+  }else{
+    // preview for shape tools — redraw from last history snap
+    if(mapHistory.length){
+      mapDrawCtx.putImageData(mapHistory[mapHistory.length-1],0,0);
+    }else{
+      mapDrawCtx.clearRect(0,0,mapDrawCanvas.width,mapDrawCanvas.height);
+    }
+    drawShapePreview(mapStartPos,pos);
+  }
+  mapLastPos=pos;
+}
+
+function mdUp(e){
+  if(!mapDrawing){mapDrawing=false;return;}
+  mapDrawing=false;
+  if(mapTool==='line'||mapTool==='arrow'||mapTool==='rect'||mapTool==='circle'){
+    // commit shape
+    drawShapePreview(mapStartPos,mapLastPos||mapStartPos);
+  }
+  mapDrawCtx.globalCompositeOperation='source-over';
+  saveMapDraw();
+}
+
+function drawShapePreview(a,b){
+  mapDrawCtx.globalCompositeOperation='source-over';
+  mapDrawCtx.strokeStyle=mapColor;mapDrawCtx.fillStyle=mapColor+'33';
+  mapDrawCtx.lineWidth=mapBrushSize;mapDrawCtx.lineCap='round';mapDrawCtx.lineJoin='round';
+  if(mapTool==='line'){
+    mapDrawCtx.beginPath();mapDrawCtx.moveTo(a.x,a.y);mapDrawCtx.lineTo(b.x,b.y);mapDrawCtx.stroke();
+  }else if(mapTool==='arrow'){
+    const dx=b.x-a.x,dy=b.y-a.y,len=Math.sqrt(dx*dx+dy*dy);
+    if(len<2)return;
+    const angle=Math.atan2(dy,dx);
+    const hs=Math.max(10,mapBrushSize*4);
+    mapDrawCtx.beginPath();mapDrawCtx.moveTo(a.x,a.y);mapDrawCtx.lineTo(b.x,b.y);mapDrawCtx.stroke();
+    mapDrawCtx.beginPath();
+    mapDrawCtx.moveTo(b.x,b.y);
+    mapDrawCtx.lineTo(b.x-hs*Math.cos(angle-0.4),b.y-hs*Math.sin(angle-0.4));
+    mapDrawCtx.lineTo(b.x-hs*Math.cos(angle+0.4),b.y-hs*Math.sin(angle+0.4));
+    mapDrawCtx.closePath();mapDrawCtx.fillStyle=mapColor;mapDrawCtx.fill();
+  }else if(mapTool==='rect'){
+    mapDrawCtx.beginPath();mapDrawCtx.rect(a.x,a.y,b.x-a.x,b.y-a.y);
+    mapDrawCtx.fill();mapDrawCtx.stroke();
+  }else if(mapTool==='circle'){
+    const rx=Math.abs(b.x-a.x)/2,ry=Math.abs(b.y-a.y)/2;
+    const cx=(a.x+b.x)/2,cy=(a.y+b.y)/2;
+    mapDrawCtx.beginPath();mapDrawCtx.ellipse(cx,cy,rx,ry,0,0,Math.PI*2);
+    mapDrawCtx.fill();mapDrawCtx.stroke();
+  }
+}
+
+function activateLabel(){
+  const txt=document.getElementById('map-label-input').value.trim();
+  if(!txt)return;
+  mapLabelText=txt;mapLabelMode=true;mapTool='text';
+  renderMapToolbar();
+  alert('Now tap anywhere on the map to place the label.');
+}
+
+function undoMap(){
+  if(!mapHistory.length)return;
+  const snap=mapHistory.pop();
+  mapDrawCtx.putImageData(snap,0,0);
+  saveMapDraw();
+}
+
+function saveMapDraw(){
+  state.mapDrawData=mapDrawCanvas.toDataURL('image/png',0.8);
+  save();
+}
+
+function loadMapBgFromData(dataUrl){
+  const img=new Image();
+  img.onload=()=>{
+    mapBgCtx.clearRect(0,0,mapBgCanvas.width,mapBgCanvas.height);
+    mapBgCtx.drawImage(img,0,0,mapBgCanvas.width,mapBgCanvas.height);
+  };
+  img.src=dataUrl;
+}
+
+function loadMapDrawFromData(dataUrl){
+  const img=new Image();
+  img.onload=()=>{mapDrawCtx.clearRect(0,0,mapDrawCanvas.width,mapDrawCanvas.height);mapDrawCtx.drawImage(img,0,0);};
+  img.src=dataUrl;
+}
+
+function handleMapBgUpload(input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const img=new Image();
+    img.onload=()=>{
+      if(!mapInited)initMapSystem();
+      // fix EXIF orientation issue on iOS
+      mapBgCtx.clearRect(0,0,mapBgCanvas.width,mapBgCanvas.height);
+      const cw=mapBgCanvas.width,ch=mapBgCanvas.height;
+      const scale=Math.min(cw/img.width,ch/img.height);
+      const dw=img.width*scale,dh=img.height*scale;
+      const dx=(cw-dw)/2,dy=(ch-dh)/2;
+      mapBgCtx.fillStyle='#111';mapBgCtx.fillRect(0,0,cw,ch);
+      mapBgCtx.drawImage(img,dx,dy,dw,dh);
+      state.mapBgData=mapBgCanvas.toDataURL('image/jpeg',0.85);
+      save();
+    };
+    img.src=e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function exportMapImage(){
+  // flatten both layers onto a temp canvas and download
+  const tmp=document.createElement('canvas');
+  tmp.width=mapBgCanvas.width;tmp.height=mapBgCanvas.height;
+  const ctx=tmp.getContext('2d');
+  ctx.drawImage(mapBgCanvas,0,0);
+  ctx.drawImage(mapDrawCanvas,0,0);
+  const a=document.createElement('a');
+  a.href=tmp.toDataURL('image/png');
+  a.download='rally-map.png';a.click();
+}
+
+function clearDrawing(){
+  if(!confirm('Clear all drawings? (background stays)'))return;
+  mapDrawCtx.clearRect(0,0,mapDrawCanvas.width,mapDrawCanvas.height);
+  mapHistory=[];state.mapDrawData=null;save();
+}
+
+function clearMapAll(){
+  if(!confirm('Clear everything including the background?'))return;
+  mapDrawCtx.clearRect(0,0,mapDrawCanvas.width,mapDrawCanvas.height);
+  mapBgCtx.clearRect(0,0,mapBgCanvas.width,mapBgCanvas.height);
+  drawMapGrid();mapHistory=[];state.mapBgData=null;state.mapDrawData=null;save();
+}
+
+function renderMapToolbar(){
+  const tb=document.getElementById('map-toolbar');if(!tb)return;tb.innerHTML='';
+  MAP_TOOLS.forEach(t=>{
+    const btn=document.createElement('button');
+    btn.className='map-tool-btn'+(mapTool===t.id?' active':'')+(t.id==='erase'?' tool-danger':'');
+    btn.textContent=t.label;
+    btn.onclick=()=>{mapTool=t.id;mapLabelMode=false;renderMapToolbar();};
+    tb.appendChild(btn);
+  });
+}
+
+function renderMapColors(){
+  const row=document.getElementById('map-colors');if(!row)return;row.innerHTML='';
+  MAP_COLORS.forEach(c=>{
+    const sw=document.createElement('div');sw.className='map-color-swatch'+(mapColor===c?' active':'');
+    sw.style.background=c;sw.title=c;
+    sw.onclick=()=>{mapColor=c;renderMapColors();};
+    row.appendChild(sw);
+  });
+}
+
+function renderMapLegend(){
+  const lg=document.getElementById('map-legend');if(!lg)return;lg.innerHTML='';
+  const items=[['📍','Pin'],['✏','Pen (draw routes)'],['→','Arrow (direction)'],['▭','Zone (area)'],['◯','Radius'],['T','Label']];
+  items.forEach(([e,l])=>{
+    const d=document.createElement('div');d.className='map-legend-item';
+    d.innerHTML=`<span>${e}</span><span>${l}</span>`;lg.appendChild(d);
+  });
+}
+
+// ── SETTINGS ───────────────────────────────────────────────────────
+function renderSettings(){
+  applyTheme();
+  // members
+  const ml=document.getElementById('member-list');ml.innerHTML='';
+  state.members.forEach((m,i)=>{
+    const el=document.createElement('div');el.className='member-item';
+    el.innerHTML=`<span class="member-name">${m}</span><button class="member-del" onclick="delMember(${i})">✕</button>`;ml.appendChild(el);
+  });
+  // locations
+  const ll=document.getElementById('location-list');ll.innerHTML='';
+  state.locations.forEach((l,i)=>{
+    const el=document.createElement('div');el.className='member-item';
+    el.innerHTML=`<span class="member-name">${l}</span><button class="member-del" onclick="delLocation(${i})">✕</button>`;ll.appendChild(el);
+  });
+  document.getElementById('subtitle-input').value=state.subtitle;
+  document.getElementById('light-toggle').checked=state.lightMode;
+}
+
+function addMember(){const input=document.getElementById('new-member-input');const n=input.value.trim();if(!n||state.members.includes(n))return;state.members.push(n);input.value='';save();renderSettings();renderChecklist();}
+function delMember(i){if(!confirm('Remove '+state.members[i]+'?'))return;const n=state.members[i];state.members.splice(i,1);state.sections.forEach(s=>s.items.forEach(it=>{if(it.member===n)it.member='';}));save();renderSettings();renderChecklist();}
+function addLocation(){const input=document.getElementById('new-location-input');const n=input.value.trim();if(!n||state.locations.includes(n))return;state.locations.push(n);input.value='';save();renderSettings();renderChecklist();}
+function delLocation(i){state.locations.splice(i,1);save();renderSettings();renderChecklist();}
+document.getElementById('new-member-input').addEventListener('keydown',e=>{if(e.key==='Enter')addMember();});
+document.getElementById('new-location-input').addEventListener('keydown',e=>{if(e.key==='Enter')addLocation();});
+function saveSubtitle(){state.subtitle=document.getElementById('subtitle-input').value.trim()||'Family · 3–6 month target';save();renderChecklist();}
+
+function exportData(){
+  const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='prep-backup.json';a.click();
+}
+function importData(input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{try{const d=JSON.parse(e.target.result);if(d.sections){state=d;save();renderChecklist();renderSettings();alert('Import successful!');}else alert('Invalid backup file.');}catch(err){alert('Could not read file.');}};
+  reader.readAsText(file);
+}
+
+// ── INSTALL BANNER ─────────────────────────────────────────────────
+function dismissBanner(){document.getElementById('install-banner').classList.remove('show');localStorage.setItem('bannerDismissed','1');}
+function showInstallBanner(){
+  const isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent);
+  if(isIOS&&!window.navigator.standalone&&!localStorage.getItem('bannerDismissed'))document.getElementById('install-banner').classList.add('show');
+}
+window.addEventListener('online',()=>document.getElementById('offline-badge').style.display='none');
+window.addEventListener('offline',()=>document.getElementById('offline-badge').style.display='inline');
+if(!navigator.onLine)document.getElementById('offline-badge').style.display='inline';
+if('serviceWorker'in navigator)navigator.serviceWorker.register('./sw.js').catch(()=>{});
+
+// ── INIT ───────────────────────────────────────────────────────────
+openPhotoDB().then(()=>{
+  loadState();applyTheme();renderChecklist();showInstallBanner();
+});
+</script>
+</body>
+</html>
